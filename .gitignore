@@ -1,0 +1,12 @@
+# Key files
+*.pem
+
+# Virtual environment
+venv/
+
+# Database file
+db.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ person.name }}님의 프로필</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Noto Sans KR', sans-serif; } </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto max-w-lg p-4">
+        <div id="profile-card" class="w-full bg-white rounded-xl shadow-lg p-8">
+            <div class="flex flex-col items-center">
+                <div class="w-32 h-32 bg-purple-200 rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-md">
+                    <span class="text-5xl text-purple-600 font-bold">{{ person.name|first }}</span>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">{{ person.name }}</h1>
+                {% if person.age %}<p class="text-gray-500 mt-1">{{ person.age }}세</p>{% endif %}
+            </div>
+            <div class="mt-8 text-center">
+                <h2 class="text-lg font-semibold text-gray-700">자기소개</h2>
+                <p class="mt-2 text-gray-600">{{ person.bio|linebreaksbr }}</p>
+            </div>
+            <div class="mt-8 text-center bg-purple-50 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2>
+                <p class="mt-2 text-purple-800">{{ person.fun_fact }}</p>
+            </div>
+            <div id="button-container" class="mt-8"></div>
+            <div class="mt-8">
+                <h2 class="text-xl font-bold text-gray-800 text-center mb-4">{{ person.name }}님이 만난 사람들 (<span id="scanned-count">{{ person.scanned_people.count }}</span>명)</h2>
+                <div id="scanned-list" class="space-y-2">
+                    {% for scanned_person in person.scanned_people.all %}
+                        <a href="{{ scanned_person.get_absolute_url }}" class="bg-gray-100 p-3 rounded-lg flex items-center hover:bg-gray-200" data-scanned-id="{{ scanned_person.id }}">
+                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3"><span class="font-bold text-gray-600">{{ scanned_person.name|first }}</span></div>
+                            <span class="text-gray-700">{{ scanned_person.name }}</span>
+                        </a>
+                    {% empty %}
+                        <p id="empty-list-msg" class="text-center text-gray-500">아직 만난 사람이 없어요!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div id="scanner-container" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 hidden">
+            <div id="reader" class="w-full max-w-md bg-white rounded-lg overflow-hidden"></div>
+            <button id="close-scan-btn" class="mt-4 bg-white text-black font-bold py-2 px-6 rounded-lg">닫기</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttonContainer = document.getElementById('button-container');
+            const scannerContainer = document.getElementById('scanner-container');
+            const closeScanBtn = document.getElementById('close-scan-btn');
+            const currentPageOwnerId = "{{ person.id }}";
+            const myId = localStorage.getItem('myProfileId');
+            const myToken = localStorage.getItem('myAuthToken');
+            
+            if (myId && myId === currentPageOwnerId) {
+                const scannedLinks = document.querySelectorAll('#scanned-list a');
+                const scannedIds = Array.from(scannedLinks).map(a => a.dataset.scannedId);
+                localStorage.setItem('myScannedIds', JSON.stringify(scannedIds));
+            }
+
+            const myScannedIds = JSON.parse(localStorage.getItem('myScannedIds') || '[]');
+
+            if (myId && myToken) {
+                if (myId === currentPageOwnerId) {
+                    createScanButton();
+                } else {
+                    if (myScannedIds.includes(currentPageOwnerId)) {
+                        createAlreadyAddedButton();
+                    } else {
+                        createAddToListButton();
+                    }
+                }
+            } else {
+                 createAuthButton();
+            }
+            
+            function createAlreadyAddedButton() {
+                const doneBtn = createButton('done-btn', '✅ 이미 수집한 사람입니다', 'bg-gray-400 cursor-not-allowed');
+                doneBtn.disabled = true;
+                buttonContainer.appendChild(doneBtn);
+            }
+
+            async function createAuthButton() {
+                const authButton = createButton('auth-btn', '이 프로필을 내 것으로 사용하기', 'bg-green-600 hover:bg-green-700');
+                authButton.onclick = async () => {
+                    authButton.disabled = true;
+                    authButton.textContent = '인증 중...';
+                    try {
+                        const response = await fetch(`/profiles/${currentPageOwnerId}/authenticate/`, { method: 'POST' });
+                        const result = await response.json();
+                        if (response.ok) {
+                            localStorage.setItem('myProfileId', result.user_id);
+                            localStorage.setItem('myAuthToken', result.auth_token);
+                            alert(result.message);
+                            window.location.reload();
+                        } else {
+                            alert(`인증 실패: ${result.message}`);
+                            authButton.disabled = false;
+                            authButton.textContent = '이 프로필을 내 것으로 사용하기';
+                        }
+                    } catch (error) {
+                        alert('인증 서버와 통신 중 오류가 발생했습니다.');
+                        authButton.disabled = false;
+                    }
+                };
+                buttonContainer.appendChild(authButton);
+            }
+            function createScanButton() {
+                const scanButton = createButton('start-scan-btn', '다른 사람 스캔하기', 'bg-purple-600 hover:bg-purple-700');
+                scanButton.onclick = () => {
+                    scannerContainer.classList.remove('hidden');
+                    startScanner();
+                };
+                buttonContainer.appendChild(scanButton);
+            }
+            function createAddToListButton() {
+                const addBtn = createButton('add-btn', `👋 ${"{{ person.name }}"}님을 만났습니다! 수집하기!`, 'bg-blue-600 hover:bg-blue-700');
+                addBtn.onclick = () => addPersonToServer(currentPageOwnerId, addBtn);
+                buttonContainer.appendChild(addBtn);
+            }
+            function createButton(id, text, style) {
+                const btn = document.createElement('button');
+                btn.id = id;
+                btn.textContent = text;
+                btn.className = `w-full text-white font-bold py-3 px-4 rounded-lg transition-colors ${style}`;
+                return btn;
+            }
+            const html5QrCode = new Html5Qrcode("reader");
+            closeScanBtn.addEventListener('click', () => stopScanner());
+            function startScanner() {
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {})
+                .catch(err => alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요."));
+            }
+            function stopScanner() {
+                html5QrCode.stop().then(() => {
+                    scannerContainer.classList.add('hidden');
+                }).catch(err => { console.error("스캐너 중지 실패", err); scannerContainer.classList.add('hidden'); });
+            }
+            function onScanSuccess(decodedText, decodedResult) {
+                stopScanner();
+                try {
+                    new URL(decodedText);
+                    window.location.href = decodedText;
+                } catch (error) {
+                    alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
+                }
+            }
+            async function addPersonToServer(scannedId, buttonElement) {
+                const scannerId = localStorage.getItem('myProfileId');
+                const authToken = localStorage.getItem('myAuthToken');
+                if (!scannerId || !authToken) {
+                    alert("오류: 본인 인증 정보가 없습니다."); return;
+                }
+                buttonElement.disabled = true;
+                buttonElement.textContent = '추가하는 중...';
+                try {
+                    const response = await fetch(`/profiles/scan/${scannedId}/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scanner_id: scannerId, auth_token: authToken })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message);
+                        buttonElement.textContent = '✅ 추가 완료!';
+                        buttonElement.className = 'w-full bg-gray-400 text-white font-bold py-3 px-4 rounded-lg';
+                        const updatedScannedIds = JSON.parse(localStorage.getItem('myScannedIds') || '[]');
+                        if (!updatedScannedIds.includes(scannedId)) {
+                            updatedScannedIds.push(scannedId);
+                            localStorage.setItem('myScannedIds', JSON.stringify(updatedScannedIds));
+                        }
+                    } else {
+                        alert(`처리 실패: ${result.message}`);
+                        buttonElement.disabled = false;
+                        buttonElement.textContent = `👋 ${"{{ person.name }}"}님을 만났습니다! 수집하기!`;
+                    }
+                } catch (error) {
+                    alert("서버와 통신 중 오류가 발생했습니다.");
+                    buttonElement.disabled = false;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
