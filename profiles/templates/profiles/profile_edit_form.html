@@ -10,7 +10,9 @@
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto max-w-lg p-4 mt-10">
-        <form id="edit-form" method="POST" action="{% url 'profiles:edit_profile' %}" class="bg-white p-8 rounded-xl shadow-lg">
+        
+        <!-- [수정 1] form의 action 속성에 app_name인 'profiles:'를 추가했습니다. -->
+        <form id="edit-form" method="POST" enctype="multipart/form-data" action="{% url 'profiles:profile_edit' person.pk %}" class="bg-white p-8 rounded-xl shadow-lg">
             {% csrf_token %}
             <h1 class="text-2xl font-bold text-center mb-6">내 프로필 수정</h1>
             
@@ -18,34 +20,15 @@
                 {{ form.as_p }}
             </div>
 
-            <input type="hidden" name="user_id" id="user_id_field">
-            <input type="hidden" name="auth_token" id="auth_token_field">
-
             <div class="mt-8">
                 <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors">
                     저장하기
                 </button>
-                <a href="#" id="back-link" class="mt-4 block text-center text-gray-600 hover:text-gray-800">취소하고 돌아가기</a>
+                <!-- [수정 2] '취소' 링크의 href 속성에도 'profiles:'를 추가했습니다. -->
+                <a href="{% url 'profiles:profile_detail' person.pk %}" class="mt-4 block text-center text-gray-600 hover:text-gray-800">취소하고 돌아가기</a>
             </div>
         </form>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const myId = localStorage.getItem('myProfileId');
-            const myToken = localStorage.getItem('myAuthToken');
-            const backLink = document.getElementById('back-link');
-
-            if (!myId || !myToken) {
-                document.getElementById('form-fields').innerHTML = '<p class="text-center text-red-500">인증 정보가 없습니다. 먼저 본인 프로필 페이지에서 인증을 완료해주세요.</p>';
-                document.querySelector('button[type="submit"]').disabled = true;
-                return;
-            }
-
-            document.getElementById('user_id_field').value = myId;
-            document.getElementById('auth_token_field').value = myToken;
-            backLink.href = `/profiles/${myId}/`;
-        });
-    </script>
+    <!-- 이 페이지에서는 더 이상 JavaScript가 필요 없으므로 삭제했습니다. -->
 </body>
 </html>

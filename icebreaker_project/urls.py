@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 # include를 import 목록에 추가해주세요.
 from django.urls import path, include 
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,3 +27,6 @@ urlpatterns = [
     # 최상위 주소('')는 새로 만든 main 앱이 담당하도록 추가
     path('', include('main.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
