@@ -1,7 +1,6 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import render, redirect
-from django.contrib import messages
 from django.db.models import Count
 from django.utils.html import format_html
 from django.urls import reverse
@@ -12,19 +11,16 @@ import openpyxl
 def reset_authentication(modeladmin, request, queryset):
     queryset.update(is_authenticated=False, auth_token=None)
 
-# ★★★★★ 새로운 액션 함수 정의 ★★★★★
 @admin.action(description='선택된 사용자의 만난 사람 목록 초기화')
 def reset_scanned_people(modeladmin, request, queryset):
     for person in queryset:
         person.scanned_people.clear()
     messages.success(request, "선택된 사용자들의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
 
-
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
     list_display = ('name', 'age', 'is_authenticated', 'scanned_count', 'view_qr_code')
     search_fields = ('name',)
-    # ★★★★★ actions 리스트에 새로운 액션 추가 ★★★★★
     actions = [reset_authentication, reset_scanned_people]
     change_list_template = "admin/profiles/person/change_list.html"
 
@@ -43,7 +39,8 @@ class PersonAdmin(admin.ModelAdmin):
                 sheet = wb.active
                 
                 for row in sheet.iter_rows(min_row=2, values_only=True):
-                    name, age, bio, fun_fact = row
+                    # 엑셀 컬럼 순서: name, age, bio, fun_fact
+                    name, age, bio, fun_fact = row[0], row[1], row[2], row[3]
                     if name:
                         Person.objects.update_or_create(
                             name=name,

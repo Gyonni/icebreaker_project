@@ -4,8 +4,10 @@
     {% csrf_token %}
     <div>
         <label for="excel_file">엑셀 파일을 선택해주세요. (첫 행은 헤더: name, age, bio, fun_fact)</label>
+        <br><br>
         <input type="file" name="excel_file" required>
     </div>
+    <br>
     <div class="submit-row">
         <input type="submit" value="업로드 및 등록" class="default">
     </div>

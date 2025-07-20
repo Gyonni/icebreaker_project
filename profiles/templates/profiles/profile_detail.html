@@ -68,6 +68,7 @@
             if (myId && myToken) {
                 if (myId === currentPageOwnerId) {
                     createScanButton();
+                    createEditButton();
                 } else {
                     if (myScannedIds.includes(currentPageOwnerId)) {
                         createAlreadyAddedButton();
@@ -118,8 +119,15 @@
                 };
                 buttonContainer.appendChild(scanButton);
             }
+            function createEditButton() {
+                const editLink = document.createElement('a');
+                editLink.href = "{% url 'profiles:edit_profile' %}";
+                editLink.textContent = '✏️ 내 프로필 수정하기';
+                editLink.className = 'mt-4 w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors';
+                buttonContainer.appendChild(editLink);
+            }
             function createAddToListButton() {
-                const addBtn = createButton('add-btn', `👋 ${"{{ person.name }}"}님을 만났습니다! 수집하기!`, 'bg-blue-600 hover:bg-blue-700');
+                const addBtn = createButton('add-btn', `👋 ${"{{ person.name }}"}님 만났습니다! 수집하기!`, 'bg-blue-600 hover:bg-blue-700');
                 addBtn.onclick = () => addPersonToServer(currentPageOwnerId, addBtn);
                 buttonContainer.appendChild(addBtn);
             }
