@@ -20,6 +20,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # 'profiles/'로 시작하는 모든 주소(URL)는 이제부터 profiles/urls.py 파일이 담당하게 됩니다.
-    path('profiles/', include('profiles.urls')), 
+    # 기존 profiles 앱의 주소는 '/profiles/' 로 변경
+    path('profiles/', include('profiles.urls')),
+    # 최상위 주소('')는 새로 만든 main 앱이 담당하도록 추가
+    path('', include('main.urls')),
 ]
