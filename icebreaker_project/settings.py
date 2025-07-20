@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-=&j8(9kow!@0oc2#w8-gn@erygtd3s(2fuj+e07zpr63xij1e+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['gyonni.pythonanywhere.com']
+ALLOWED_HOSTS = ['3.39.24.214', 'jusarangxjesusvision.kr']
 
 
 # Application definition
@@ -123,4 +123,4 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SITE_URL = 'https://gyonni.pythonanywhere.com'
+SITE_URL = 'https://jusarangxjesusvision.kr'
