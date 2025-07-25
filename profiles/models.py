@@ -3,20 +3,38 @@ from django.urls import reverse
 import uuid
 
 class Person(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100, help_text="이름")
-    age = models.IntegerField(null=True, blank=True, help_text="나이")
-    bio = models.TextField(max_length=500, help_text="짧은 자기소개", blank=True)
-    fun_fact = models.CharField(max_length=200, blank=True, help_text="재미있는 사실 한 가지")
-    scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by')
-    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True, verbose_name="프로필 사진")
+    # 사용자 제공 코드 기반: UUID를 기본 키로 사용
+    id = models.UUIDField("고유 ID", primary_key=True, default=uuid.uuid4, editable=False)
     
-    # 서버 기반 인증을 위한 필드
-    is_authenticated = models.BooleanField(default=False, help_text="이 사용자가 기기 인증을 완료했는지 여부")
-    auth_token = models.CharField(max_length=64, blank=True, null=True, unique=True, help_text="인증된 기기에만 발급되는 비밀 토큰")
+    # 기본 정보
+    name = models.CharField("이름", max_length=100)
+    phone_number = models.CharField("전화번호", max_length=20, unique=True, help_text="'-' 없이 숫자만 입력해주세요. 사용자 구분을 위한 필수 항목입니다.")
+    bio = models.TextField("소개", blank=True)
+    profile_image = models.ImageField("프로필 사진", upload_to='profile_images/', null=True, blank=True)
+
+    # 연합 수련회용 정보
+    GROUP_CHOICES = [
+        ('주사랑교회', '주사랑교회'),
+        ('예수비전교회', '예수비전교회'),
+    ]
+    group = models.CharField("소속", max_length=20, choices=GROUP_CHOICES, default='주사랑교회')
+    team = models.CharField("팀", max_length=50, blank=True)
+    role = models.CharField("역할", max_length=50, blank=True)
+    
+    # 인증 및 QR 관련
+    auth_token = models.UUIDField("인증 토큰", default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
+    is_authenticated = models.BooleanField("인증여부", default=False)
+    
+    # 아이스브레이킹 정보
+    scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by', verbose_name="만난 사람")
 
     def __str__(self):
-        return self.name
-    
+        return f"{self.name} ({self.group} - {self.team})"
+
     def get_absolute_url(self):
+        # 'profile_detail' URL이 profiles/urls.py에 정의되어 있어야 합니다.
         return reverse('profiles:profile_detail', kwargs={'pk': self.pk})
+
+    class Meta:
+        verbose_name = "참가자"
+        verbose_name_plural = "참가자 목록"
