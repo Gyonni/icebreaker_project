@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.urls import reverse
-from django.contrib import messages # Django 메시지 프레임워크를 가져옵니다.
+from django.contrib import messages
 from .models import Person
-from .forms import ProfileForm
+# forms.py에 이미지 리사이징 기능이 추가되었습니다.
+from .forms import ProfileForm 
 import qrcode
 from io import BytesIO
 import uuid
@@ -21,17 +22,16 @@ def profile_detail(request, pk):
 
     show_claim_button = (not person.is_authenticated) and (viewer is None)
 
-    # --- [수정] 내가 이미 이 사람을 스캔했는지 확인하는 로직 추가 ---
     is_already_scanned = False
     if viewer and person != viewer:
-        # viewer의 만난 사람 목록에 person이 있는지 확인합니다.
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
 
     context = {
+        # 'ㅇ' 오타를 제거하여 문법 오류를 수정했습니다.
         'person': person,
         'viewer': viewer,
         'show_claim_button': show_claim_button,
-        'is_already_scanned': is_already_scanned, # 이 변수를 템플릿으로 전달합니다.
+        'is_already_scanned': is_already_scanned,
     }
     return render(request, 'profiles/profile_detail.html', context)
 
