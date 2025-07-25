@@ -48,10 +48,11 @@ class PersonAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         urls = super().get_urls()
+        # [수정] URL 이름을 info 객체에서 직접 가져오도록 변경하여 오류 해결
+        info = self.model._meta.app_label, self.model._meta.model_name
         custom_urls = [
-            # [수정] URL 경로와 이름을 더 단순하게 변경하여 오류 해결
-            path('import/', self.admin_site.admin_view(self.import_from_excel), name='import'),
-            path('export/', self.admin_site.admin_view(self.export_all_participants), name='export'),
+            path('import-excel/', self.admin_site.admin_view(self.import_from_excel), name='%s_%s_import_excel' % info),
+            path('export-excel-all/', self.admin_site.admin_view(self.export_all_participants), name='%s_%s_export_excel_all' % info),
         ]
         return custom_urls + urls
 
