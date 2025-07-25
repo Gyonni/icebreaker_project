@@ -11,13 +11,12 @@
         body { font-family: 'Noto Sans KR', sans-serif; } 
     </style>
 </head>
-<body class="relative w-full h-screen overflow-hidden bg-black">
+<body class="relative w-full h-screen overflow-hidden">
     <!-- 배경 이미지 및 어두운 오버레이 -->
-    <div class="absolute inset-0 z-0 flex items-center justify-center">
-        <!-- 이미지 경로에 'core/'가 포함되어 있는지 확인하세요 -->
-        <img src="{% static 'core/images/main_image.jpg' %}" alt="메인 배경 이미지" class="w-full h-full object-contain">
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'core/images/main_image.jpg' %}" alt="메인 배경 이미지" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
     </div>
-    <div class="absolute inset-0 z-0 bg-black opacity-50"></div>
 
     <!-- 콘텐츠 컨테이너 -->
     <div class="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
@@ -26,8 +25,10 @@
             <p class="text-xl md:text-2xl mt-2 opacity-90">2025 연합 수련회</p>
         </header>
         
-        <main class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full mx-auto mt-12">
-            <a href="{% url 'core:schedule' %}" class="bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
+        <!-- 메뉴 (세로 배열로 수정) -->
+        <main class="flex flex-col items-center gap-6 max-w-md w-full mx-auto mt-12">
+            <!-- 수련회 일정 버튼 -->
+            <a href="{% url 'core:schedule' %}" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
                 <div class="flex items-center">
                     <div class="bg-purple-500/80 p-4 rounded-lg">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -38,7 +39,8 @@
                     </div>
                 </div>
             </a>
-            <div class="bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg cursor-not-allowed opacity-60">
+            <!-- 장소 안내 버튼 -->
+            <div class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg cursor-not-allowed opacity-60">
                 <div class="flex items-center">
                     <div class="bg-green-500/80 p-4 rounded-lg">
                          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -48,7 +50,95 @@
                         <p class="opacity-80">오시는 길을 안내합니다.</p>
                     </div>
                 </div>
-            </main>
+            </div>
+            <!-- 내 프로필 보기 버튼 (새로 추가) -->
+            {% if viewer_profile_id %}
+                <!-- Case 1: 이미 인증된 사용자일 경우 -> 바로 프로필로 이동하는 링크 -->
+                <a href="{% url 'profiles:profile_detail' viewer_profile_id %}" id="my-profile-btn" class="w-full bg-blue-500/80 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-blue-600/80 transform hover:-translate-y-1 transition-all duration-300">
+                    <div class="flex items-center">
+                        <div class="bg-blue-700/80 p-4 rounded-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-xl font-bold">내 프로필 보기</h2>
+                            <p class="opacity-80">내 정보를 확인하고 수정합니다.</p>
+                        </div>
+                    </div>
+                </a>
+            {% else %}
+                <!-- Case 2: 아직 인증되지 않은 사용자일 경우 -> QR 스캐너를 여는 버튼 -->
+                <button id="my-profile-btn" class="w-full bg-blue-500/80 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-blue-600/80 transform hover:-translate-y-1 transition-all duration-300 text-left">
+                    <div class="flex items-center">
+                        <div class="bg-blue-700/80 p-4 rounded-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                        <div class="ml-4">
+                            <h2 class="text-xl font-bold">내 프로필 보기</h2>
+                            <p class="opacity-80">QR 스캔으로 내 프로필을 등록하세요.</p>
+                        </div>
+                    </div>
+                </button>
+            {% endif %}
+        </main>
     </div>
+
+    <!-- 스캐너 모달 (숨겨져 있음) -->
+    <div id="scanner-container" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 hidden z-50">
+        <div id="reader" class="w-full max-w-md bg-white rounded-lg overflow-hidden"></div>
+        <button id="close-scan-btn" class="mt-4 bg-white text-black font-bold py-2 px-6 rounded-lg">닫기</button>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const myProfileBtn = document.getElementById('my-profile-btn');
+            
+            // 버튼이 존재하고, 'BUTTON' 태그일 때만 (즉, 인증되지 않았을 때만) 스캐너 로직을 실행합니다.
+            if (myProfileBtn && myProfileBtn.tagName === 'BUTTON') {
+                const scannerContainer = document.getElementById('scanner-container');
+                const closeScanBtn = document.getElementById('close-scan-btn');
+                const html5QrCode = new Html5Qrcode("reader");
+
+                myProfileBtn.addEventListener('click', () => {
+                    alert('명찰의 QR코드를 스캔하여 내 프로필을 등록해주세요.');
+                    scannerContainer.style.display = 'flex';
+                    startScanner();
+                });
+
+                closeScanBtn.addEventListener('click', () => stopScanner());
+
+                function startScanner() {
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        onScanSuccess,
+                        () => {}
+                    ).catch(err => {
+                        alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요.");
+                        scannerContainer.style.display = 'none';
+                    });
+                }
+
+                function stopScanner() {
+                    html5QrCode.stop().then(() => {
+                        scannerContainer.style.display = 'none';
+                    }).catch(err => {
+                        console.error("스캐너 중지 실패", err);
+                        scannerContainer.style.display = 'none';
+                    });
+                }
+
+                function onScanSuccess(decodedText, decodedResult) {
+                    stopScanner();
+                    try {
+                        new URL(decodedText);
+                        window.location.href = decodedText;
+                    } catch (error) {
+                        alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
