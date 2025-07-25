@@ -1,20 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.urls import reverse
+from django.contrib import messages # Django 메시지 프레임워크를 가져옵니다.
 from .models import Person
-from .forms import ProfileForm # 방금 만든 ProfileForm을 가져옵니다.
+from .forms import ProfileForm
 import qrcode
 from io import BytesIO
 import uuid
 
 def profile_detail(request, pk):
-    # URL로부터 대상 프로필을 가져옵니다.
     person = get_object_or_404(Person, pk=pk)
-    
-    # 사용자의 브라우저(세션)에 저장된 auth_token을 확인합니다.
     viewer_auth_token = request.session.get('auth_token')
     
-    # auth_token을 가진 사용자가 있는지 확인합니다.
     viewer = None
     if viewer_auth_token:
         try:
@@ -22,7 +19,6 @@ def profile_detail(request, pk):
         except Person.DoesNotExist:
             request.session.pop('auth_token', None)
 
-    # "내 프로필로 만들기" 버튼을 보여줄지 결정하는 조건
     show_claim_button = (not person.is_authenticated) and (viewer is None)
 
     context = {
@@ -32,27 +28,23 @@ def profile_detail(request, pk):
     }
     return render(request, 'profiles/profile_detail.html', context)
 
-# 프로필 수정 기능 추가
 def profile_edit(request, pk):
     person = get_object_or_404(Person, pk=pk)
     
-    # 본인만 수정 가능하도록 확인
     viewer_auth_token = request.session.get('auth_token')
     if str(person.auth_token) != viewer_auth_token:
-        # 본인이 아니면 상세 페이지로 돌려보냄
         return redirect('profiles:profile_detail', pk=person.pk)
 
     if request.method == 'POST':
         form = ProfileForm(request.POST, request.FILES, instance=person)
         if form.is_valid():
             form.save()
+            messages.success(request, '프로필이 성공적으로 수정되었습니다!')
             return redirect('profiles:profile_detail', pk=person.pk)
     else:
         form = ProfileForm(instance=person)
         
     return render(request, 'profiles/profile_edit_form.html', {'form': form, 'person': person})
-
-# --- 아래는 기존 인증/스캔/QR 생성 기능으로, 그대로 유지됩니다. ---
 
 def claim_profile(request, pk):
     if request.method == 'POST':
@@ -67,7 +59,7 @@ def claim_profile(request, pk):
         person.save()
 
         request.session['auth_token'] = str(auth_token)
-        
+        messages.success(request, f"'{person.name}'님의 프로필이 등록되었습니다!")
         return redirect(person.get_absolute_url())
     return redirect('profiles:profile_detail', pk=pk)
 
@@ -83,17 +75,24 @@ def generate_qr(request, pk):
 def add_scanned_person(request, pk):
     if request.method == 'POST':
         scanned_person = get_object_or_404(Person, pk=pk)
-        
         viewer_auth_token = request.session.get('auth_token')
+        
         if not viewer_auth_token:
+            messages.error(request, '먼저 본인의 프로필을 등록해주세요.')
             return redirect(scanned_person.get_absolute_url())
         
         try:
             viewer = Person.objects.get(auth_token=viewer_auth_token)
             if viewer != scanned_person:
-                viewer.scanned_people.add(scanned_person)
+                if scanned_person in viewer.scanned_people.all():
+                    messages.info(request, f"'{scanned_person.name}'님은 이미 만난 사람 목록에 있습니다.")
+                else:
+                    viewer.scanned_people.add(scanned_person)
+                    messages.success(request, f"'{scanned_person.name}'님을 만난 사람 목록에 추가했습니다!")
+            else:
+                messages.warning(request, '자기 자신은 추가할 수 없습니다.')
         except Person.DoesNotExist:
-            pass
+            messages.error(request, '인증 정보가 유효하지 않습니다. 다시 프로필을 등록해주세요.')
             
         return redirect(scanned_person.get_absolute_url())
     return redirect('profiles:profile_detail', pk=pk)
