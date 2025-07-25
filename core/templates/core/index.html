@@ -14,11 +14,10 @@
 <body class="relative w-full h-screen overflow-hidden bg-black">
     <!-- 배경 이미지 및 어두운 오버레이 -->
     <div class="absolute inset-0 z-0 flex items-center justify-center">
-        <!-- object-cover를 object-contain으로 수정하여 이미지 비율을 유지합니다. -->
+        <!-- 이미지 경로에 'core/'가 포함되어 있는지 확인하세요 -->
         <img src="{% static 'core/images/main_image.jpg' %}" alt="메인 배경 이미지" class="w-full h-full object-contain">
     </div>
     <div class="absolute inset-0 z-0 bg-black opacity-50"></div>
-
 
     <!-- 콘텐츠 컨테이너 -->
     <div class="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
