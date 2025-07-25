@@ -54,7 +54,7 @@
 
                 {% elif viewer %}
                     {% if viewer.id == person.id %}
-                        <!-- Case 2: 내 프로필을 보고 있음 -> 스캔 버튼과 수정 버튼 표시 -->
+                        <!-- Case 2: 내 프로필을 보고 있음 -->
                         <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">
                             다른 사람 QR 스캔하기
                         </button>
@@ -63,12 +63,20 @@
                         </a>
                     {% else %}
                         <!-- Case 3: 다른 사람의 프로필을 보고 있음 -->
-                        <form action="{% url 'profiles:add_scanned_person' person.id %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700">
-                                👋 '{{ person.name }}'님 만났습니다! 목록에 추가
+                        {% if is_already_scanned %}
+                            <!-- [수정] 이미 만난 사람일 경우 -->
+                            <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">
+                                ✅ 이미 만난 사람입니다
                             </button>
-                        </form>
+                        {% else %}
+                            <!-- 아직 만나지 않은 사람일 경우 -->
+                            <form action="{% url 'profiles:add_scanned_person' person.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700">
+                                    👋 '{{ person.name }}'님 만났습니다! 목록에 추가
+                                </button>
+                            </form>
+                        {% endif %}
                     {% endif %}
                 {% else %}
                      <!-- Case 4: 나는 등록되지 않았지만, 이미 주인이 있는 프로필을 봄 -->

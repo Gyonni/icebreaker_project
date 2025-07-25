@@ -21,10 +21,17 @@ def profile_detail(request, pk):
 
     show_claim_button = (not person.is_authenticated) and (viewer is None)
 
+    # --- [수정] 내가 이미 이 사람을 스캔했는지 확인하는 로직 추가 ---
+    is_already_scanned = False
+    if viewer and person != viewer:
+        # viewer의 만난 사람 목록에 person이 있는지 확인합니다.
+        is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
+
     context = {
         'person': person,
         'viewer': viewer,
         'show_claim_button': show_claim_button,
+        'is_already_scanned': is_already_scanned, # 이 변수를 템플릿으로 전달합니다.
     }
     return render(request, 'profiles/profile_detail.html', context)
 
@@ -85,11 +92,9 @@ def add_scanned_person(request, pk):
             viewer = Person.objects.get(auth_token=viewer_auth_token)
             if viewer != scanned_person:
                 if scanned_person in viewer.scanned_people.all():
-                    # 따옴표 제거
                     messages.info(request, f"{scanned_person.name}님은 이미 만난 사람 목록에 있습니다.")
                 else:
                     viewer.scanned_people.add(scanned_person)
-                    # 따옴표 제거
                     messages.success(request, f"{scanned_person.name}님을 만난 사람 목록에 추가했습니다!")
             else:
                 messages.warning(request, '자기 자신은 추가할 수 없습니다.')
