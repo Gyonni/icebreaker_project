@@ -1,73 +1,105 @@
 from django.contrib import admin, messages
-from django.urls import path
+from django.urls import path, reverse
 from django.shortcuts import render, redirect
 from django.db.models import Count
 from django.utils.html import format_html
-from django.urls import reverse
 from .models import Person
-import openpyxl
+import pandas as pd # pandas가 더 안정적이고 다양한 엑셀 형식을 지원합니다.
 
+# Admin Action: 선택된 사용자의 인증 상태 초기화
 @admin.action(description='선택된 사용자의 인증 상태 초기화')
 def reset_authentication(modeladmin, request, queryset):
-    queryset.update(is_authenticated=False, auth_token=None)
+    updated_count = queryset.update(is_authenticated=False, auth_token=None)
+    messages.success(request, f"{updated_count}명의 사용자의 인증 상태를 초기화했습니다.")
 
+# Admin Action: 선택된 사용자의 만난 사람 목록 초기화
 @admin.action(description='선택된 사용자의 만난 사람 목록 초기화')
 def reset_scanned_people(modeladmin, request, queryset):
+    count = len(queryset)
     for person in queryset:
         person.scanned_people.clear()
-    messages.success(request, "선택된 사용자들의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
+    messages.success(request, f"{count}명의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'age', 'is_authenticated', 'scanned_count', 'view_qr_code')
-    search_fields = ('name',)
+    # models.py에 정의된 필드에 맞춰 list_display를 수정했습니다.
+    list_display = ('name', 'team', 'role', 'group', 'is_authenticated', 'scanned_count', 'view_qr_code')
+    list_filter = ('team', 'role', 'group', 'is_authenticated')
+    search_fields = ('name', 'phone_number', 'team')
     actions = [reset_authentication, reset_scanned_people]
     change_list_template = "admin/profiles/person/change_list.html"
 
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('import-excel/', self.import_from_excel, name='import_excel'),
+            # import-excel URL은 그대로 유지합니다.
+            path('import-excel/', self.admin_site.admin_view(self.import_from_excel), name='import-excel'),
         ]
         return custom_urls + urls
 
     def import_from_excel(self, request):
-        if request.method == "POST":
-            excel_file = request.FILES["excel_file"]
+        if request.method == 'POST':
+            if 'excel_file' not in request.FILES:
+                self.message_user(request, "엑셀 파일을 선택해주세요.", level=messages.ERROR)
+                return redirect('.')
+            
+            excel_file = request.FILES['excel_file']
             try:
-                wb = openpyxl.load_workbook(excel_file)
-                sheet = wb.active
-                
-                for row in sheet.iter_rows(min_row=2, values_only=True):
-                    # 엑셀 컬럼 순서: name, age, bio, fun_fact
-                    name, age, bio, fun_fact = row[0], row[1], row[2], row[3]
-                    if name:
-                        Person.objects.update_or_create(
-                            name=name,
-                            defaults={
-                                'age': age if age else None,
-                                'bio': bio if bio else "",
-                                'fun_fact': fun_fact if fun_fact else ""
-                            }
-                        )
-                messages.success(request, "엑셀 파일로부터 프로필이 성공적으로 등록/업데이트되었습니다.")
-                return redirect("..")
+                # pandas를 사용하여 엑셀 파일 읽기
+                df = pd.read_excel(excel_file, engine='openpyxl')
+
+                # models.py에 맞는 필수 컬럼을 확인합니다.
+                required_columns = ['이름', '팀', '역할', '전화번호', '소속']
+                if not all(col in df.columns for col in required_columns):
+                    self.message_user(request, f"엑셀 파일에 다음 필수 컬럼이 모두 포함되어 있는지 확인해주세요: {', '.join(required_columns)}", level=messages.ERROR)
+                    return redirect('.')
+
+                for index, row in df.iterrows():
+                    # 전화번호는 고유값이므로 데이터 처리의 기준이 됩니다.
+                    phone_number = ''.join(filter(str.isdigit, str(row['전화번호'])))
+                    if not phone_number:
+                        continue # 전화번호가 없으면 건너뜁니다.
+                    
+                    # Person 객체 생성 또는 업데이트 (고유값인 phone_number 기준)
+                    Person.objects.update_or_create(
+                        phone_number=phone_number,
+                        defaults={
+                            'name': row['이름'],
+                            'team': row['팀'],
+                            'role': row['역할'],
+                            'group': row['소속'],
+                            'bio': row.get('소개', ''), # '소개' 컬럼은 선택사항
+                        }
+                    )
+                self.message_user(request, "엑셀 파일로부터 성공적으로 사용자들을 추가/업데이트했습니다.")
             except Exception as e:
-                messages.error(request, f"파일 처리 중 오류가 발생했습니다: {e}")
+                self.message_user(request, f"파일 처리 중 오류가 발생했습니다: {e}", level=messages.ERROR)
+            
+            return redirect('..')
 
-        return render(request, "admin/import_excel_form.html")
+        # GET 요청 시, 템플릿을 렌더링합니다.
+        # 템플릿 경로를 올바르게 수정했습니다.
+        return render(
+            request, 'admin/profiles/person/import_excel_form.html', context={"opts": self.model._meta}
+        )
 
+    # '만난 사람 수'를 계산하기 위한 로직
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.annotate(_scanned_count=Count('scanned_people'))
+        return queryset.annotate(_scanned_count=Count('scanned_people', distinct=True))
 
     def scanned_count(self, obj):
         return obj._scanned_count
     scanned_count.short_description = '만난 사람 수'
     scanned_count.admin_order_field = '_scanned_count'
 
+    # QR 코드 보기 링크
     def view_qr_code(self, obj):
-        url = reverse('profiles:generate_qr', args=[obj.pk])
-        return format_html('<a href="{}" target="_blank">QR코드 보기</a>', url)
+        # 'profiles' 앱의 urls.py에 'generate_qr'이라는 이름의 URL 패턴이 있어야 합니다.
+        try:
+            url = reverse('profiles:generate_qr', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank">QR코드 보기</a>', url)
+        except Exception:
+            return "URL 확인 필요"
     
     view_qr_code.short_description = "QR Code 생성"
