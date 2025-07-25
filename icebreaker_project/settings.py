@@ -7,17 +7,13 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
+# 실제 운영 환경에서는 이 키를 코드에 직접 쓰지 않고 숨겨야 합니다.
 SECRET_KEY = 'django-insecure-^j!3z*^s$p!w8k(v1k+g#*h#7&!0s+7!b*#@y&o*#@y&o'
 
-# ★★★★★ 핵심 수정 1: DEBUG 모드 활성화 ★★★★★
-# 로컬에서 개발/테스트할 때는 반드시 True로 설정해야 합니다.
-# True로 해야 에러의 상세 내용을 볼 수 있고, Django 개발 서버가 직접
-# CSS/JS 같은 정적 파일들을 처리해줘서 화면 깨짐을 막아줍니다.
-DEBUG = True
+# ★★★★★ 중요: 실제 서버에서는 반드시 False로 설정해야 합니다. ★★★★★
+# False로 해야 보안이 강화되고, Nginx가 정적 파일을 처리하게 됩니다.
+DEBUG = False
 
 # 실제 서버 주소와 로컬 주소를 모두 허용합니다.
 ALLOWED_HOSTS = [
@@ -36,7 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'profiles',  # profiles 앱
+    'profiles',
     'core',
 ]
 
@@ -55,9 +51,7 @@ ROOT_URLCONF = 'icebreaker_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # 프로젝트 전역에서 사용할 templates 폴더를 지정합니다.
-        # 각 앱 안에 있는 templates 폴더는 APP_DIRS=True 설정으로 자동 인식됩니다.
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -94,25 +88,17 @@ TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 USE_TZ = True
 
+# --- ★★★★★ 핵심 수정: 정적 파일 및 미디어 파일 설정 최종 정리 ★★★★★ ---
 
-# ★★★★★ 핵심 수정 2: 정적 파일(Static files) 설정 정리 ★★★★★
-# 겹치고 중복된 설정들을 모두 정리했습니다. 이것이 올바른 설정입니다.
+# 1. Static files (CSS, JavaScript, Admin Images)
+STATIC_URL = '/static/'
+# 'collectstatic' 명령어가 모든 정적 파일을 복사해서 모아둘 최종 폴더
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# 1. 웹에서 정적 파일에 접근할 때 사용할 기본 URL 경로
-STATIC_URL = 'static/'
-
-# 2. 개발 서버가 CSS, JS, 이미지 파일 등을 찾을 '원본' 폴더들의 목록
-#    - Django 관리자 페이지 스타일이 담긴 'staticfiles' 폴더
-#    - 우리가 직접 만들 'main' 앱의 스타일이 담길 'main/static' 폴더
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),
-    os.path.join(BASE_DIR, 'main', 'static'),
-]
-
-# 3. 실제 서버에 배포할 때, `collectstatic` 명령어로 모든 정적 파일을 '복사해서 모아둘 최종 폴더'
-#    이 폴더 이름은 위의 STATICFILES_DIRS에 있는 폴더 이름과 절대로 겹치면 안 됩니다.
-STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
-
+# 2. Media files (User-uploaded profile images)
+MEDIA_URL = '/media/'
+# 사용자가 업로드한 프로필 사진이 실제로 저장될 폴더
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
