@@ -4,14 +4,14 @@
 {% block object-tools-items %}
     {{ block.super }}
     <li>
-        <!-- [수정] 올바른 URL 이름으로 변경: admin:앱이름_모델이름_URL이름 -->
-        <a href="{% url 'admin:profiles_person_import-excel' %}" class="addlink">
+        <!-- [수정] 올바른 URL 이름으로 변경 (하이픈 -> 언더스코어) -->
+        <a href="{% url 'admin:profiles_person_import_excel' %}" class="addlink">
             엑셀로 일괄 등록하기
         </a>
     </li>
     <li>
-        <!-- [수정] 올바른 URL 이름으로 변경: admin:앱이름_모델이름_URL이름 -->
-        <a href="{% url 'admin:profiles_person_export-excel-all' %}" class="addlink" style="background-color: #28a745;">
+        <!-- [수정] 올바른 URL 이름으로 변경 (하이픈 -> 언더스코어) -->
+        <a href="{% url 'admin:profiles_person_export_excel_all' %}" class="addlink" style="background-color: #28a745;">
             전체 명단 다운로드 (QR 포함)
         </a>
     </li>
