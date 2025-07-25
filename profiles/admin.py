@@ -20,7 +20,6 @@ def reset_scanned_people(modeladmin, request, queryset):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    # 고유번호를 표시하고 검색할 수 있도록 수정했습니다.
     list_display = ('name', 'unique_code', 'group', 'team', 'is_authenticated', 'scanned_count', 'view_qr_code')
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
@@ -43,8 +42,8 @@ class PersonAdmin(admin.ModelAdmin):
             excel_file = request.FILES['excel_file']
             try:
                 df = pd.read_excel(excel_file, engine='openpyxl')
-                # 엑셀 파일에 '고유번호' 컬럼이 필수로 포함되어야 합니다.
-                required_columns = ['고유번호', '이름', '소속', '팀']
+                # 엑셀 파일에 '재미있는 사실' 컬럼을 추가합니다.
+                required_columns = ['고유번호', '이름', '소속', '팀'] # '재미있는 사실'은 선택사항
                 if not all(col in df.columns for col in required_columns):
                     missing_cols = [col for col in required_columns if col not in df.columns]
                     self.message_user(request, f"엑셀 파일에 다음 필수 컬럼이 없습니다: {', '.join(missing_cols)}", level=messages.ERROR)
@@ -57,12 +56,13 @@ class PersonAdmin(admin.ModelAdmin):
                     
                     # 고유번호를 기준으로 사용자를 찾아 업데이트합니다.
                     Person.objects.update_or_create(
-                        unique_code=unique_code,
+                        unique_code=str(unique_code), # 문자열로 변환하여 일관성 유지
                         defaults={
                             'name': row['이름'],
                             'group': row['소속'],
                             'team': row['팀'],
                             'bio': row.get('소개', ''),
+                            'fun_fact': row.get('재미있는 사실', '') # fun_fact 데이터 추가
                         }
                     )
                 self.message_user(request, "엑셀 파일로부터 성공적으로 사용자들을 추가/업데이트했습니다.")

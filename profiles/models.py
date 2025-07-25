@@ -7,12 +7,12 @@ class Person(models.Model):
     id = models.UUIDField("고유 ID", primary_key=True, default=uuid.uuid4, editable=False)
     
     # 엑셀 업로드 및 식별용 고유 코드
-    # null=True를 추가하여 기존 데이터에 대한 마이그레이션 오류를 해결합니다.
     unique_code = models.CharField("고유번호", max_length=50, unique=True, null=True, help_text="엑셀 업로드 시 사용자를 구분하는 고유한 번호 또는 코드입니다.")
 
     # 기본 정보
     name = models.CharField("이름", max_length=100)
     bio = models.TextField("소개", blank=True)
+    fun_fact = models.CharField("재미있는 사실", max_length=200, blank=True) # fun_fact 필드 복원
     profile_image = models.ImageField("프로필 사진", upload_to='profile_images/', null=True, blank=True)
 
     # 연합 수련회용 정보
