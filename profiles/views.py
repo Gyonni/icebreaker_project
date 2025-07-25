@@ -43,6 +43,7 @@ def profile_edit(request, pk):
         return redirect('profiles:profile_detail', pk=person.pk)
 
     if request.method == 'POST':
+        # ProfileForm을 사용하므로, 폼에 정의된 이미지 리사이징 로직이 자동으로 실행됩니다.
         form = ProfileForm(request.POST, request.FILES, instance=person)
         if form.is_valid():
             form.save()
