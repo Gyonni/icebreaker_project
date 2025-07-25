@@ -1,45 +1,54 @@
-<!-- 파일 경로: /home/ubuntu/icebreaker_project/core/templates/core/index.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Icebreaker Project</title>
-    <style>
-        /* 기본적인 스타일 리셋 */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* 스크롤바 제거 */
-        }
-        /* 배경 컨테이너 스타일 */
-        .background-container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000; /* 이미지가 로드되기 전, 그리고 이미지 양옆의 배경색 */
-        }
-        /* 배경 이미지 스타일 */
-        .background-container img {
-            width: 100%;
-            height: 100%;
-            /* * object-fit: contain; 
-             * 이미지의 비율을 유지하면서, 요소의 콘텐츠 박스 내부에 들어가도록 크기를 조절합니다.
-             * 세로가 긴 이미지는 높이를 100%로 맞추고, 너비는 비율에 맞게 줄어들어 양옆에 여백이 생깁니다.
-             */
-            object-fit: contain;
-        }
+    <title>주사랑교회 X 예수비전교회 연합 수련회</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Noto Sans KR', sans-serif; } 
     </style>
 </head>
-<body>
-    <div class="background-container">
-        <!-- Django의 static 기능을 이용해 이미지 경로를 불러옵니다. -->
-        <img src="{% static 'core/images/main_image.jpg' %}" alt="메인 배경 이미지">
+<body class="relative w-full h-screen overflow-hidden">
+    <!-- 배경 이미지 및 어두운 오버레이 -->
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'images/main_image.jpg' %}" alt="메인 배경 이미지" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+    </div>
+
+    <!-- 콘텐츠 컨테이너 -->
+    <div class="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
+        <header class="text-center">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight">Jusarang x Jesus Vision</h1>
+            <p class="text-xl md:text-2xl mt-2 opacity-90">2025 연합 수련회</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full mx-auto mt-12">
+            <a href="{% url 'core:schedule' %}" class="bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
+                <div class="flex items-center">
+                    <div class="bg-purple-500/80 p-4 rounded-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">수련회 일정</h2>
+                        <p class="opacity-80">전체 시간표를 확인하세요.</p>
+                    </div>
+                </div>
+            </a>
+            <div class="bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg cursor-not-allowed opacity-60">
+                <div class="flex items-center">
+                    <div class="bg-green-500/80 p-4 rounded-lg">
+                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">장소 안내 (준비중)</h2>
+                        <p class="opacity-80">오시는 길을 안내합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 </body>
 </html>

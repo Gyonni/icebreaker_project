@@ -1,11 +1,10 @@
+# core/views.py
 from django.shortcuts import render
 
 def index(request):
-    """
-    대문 페이지를 렌더링하는 뷰입니다.
-    특별한 로직 없이 main/index.html 템플릿을 보여줍니다.
-    """
+    # 홈페이지를 보여주는 함수
     return render(request, 'core/index.html')
 
 def schedule(request):
+    # 수련회 일정 페이지를 보여주는 함수
     return render(request, 'core/schedule.html')
