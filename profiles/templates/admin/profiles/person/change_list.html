@@ -1,11 +1,17 @@
 {% extends "admin/change_list.html" %}
-{% load i18n %}
+{% load static %}
 
 {% block object-tools-items %}
-  {{ block.super }}
-  <li>
-    <a href="import-excel/" class="addlink">
-      {% translate '엑셀로 일괄 등록하기' %}
-    </a>
-  </li>
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:import-excel' %}" class="addlink">
+            엑셀로 일괄 등록하기
+        </a>
+    </li>
+    <!-- [새로운 기능] 전체 참가자 명단을 다운로드하는 버튼 추가 -->
+    <li>
+        <a href="{% url 'admin:export-excel-all' %}" class="addlink" style="background-color: #28a745;">
+            전체 명단 다운로드 (QR 포함)
+        </a>
+    </li>
 {% endblock %}

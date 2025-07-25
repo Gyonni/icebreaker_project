@@ -6,6 +6,35 @@ from django.utils.html import format_html
 from .models import Person
 import pandas as pd
 
+# --- [새로운 기능] 선택된 참가자 정보를 엑셀로 내보내는 관리자 액션 ---
+@admin.action(description='선택된 참가자의 QR 정보를 엑셀로 내보내기')
+def export_as_excel(modeladmin, request, queryset):
+    data = []
+    for person in queryset:
+        # 각 참가자의 프로필 상세 페이지 URL을 생성합니다. 이것이 QR코드의 내용이 됩니다.
+        profile_url = request.build_absolute_uri(
+            reverse('profiles:profile_detail', args=[str(person.id)])
+        )
+        data.append({
+            "고유번호": person.unique_code,
+            "이름": person.name,
+            "소속": person.group,
+            "팀": person.team,
+            "QR코드 링크": profile_url,
+        })
+
+    df = pd.DataFrame(data)
+    
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    response['Content-Disposition'] = f'attachment; filename="participants_qr_{timestamp}.xlsx"'
+    
+    df.to_excel(response, index=False, engine='openpyxl')
+    
+    return response
+
 @admin.action(description='선택된 사용자의 인증 상태 초기화')
 def reset_authentication(modeladmin, request, queryset):
     updated_count = queryset.update(is_authenticated=False, auth_token=None)
