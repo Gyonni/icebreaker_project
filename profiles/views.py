@@ -27,7 +27,6 @@ def profile_detail(request, pk):
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
 
     context = {
-        # 'ㅇ' 오타를 제거하여 문법 오류를 수정했습니다.
         'person': person,
         'viewer': viewer,
         'show_claim_button': show_claim_button,
