@@ -8,7 +8,6 @@ class Person(models.Model):
     
     # 기본 정보
     name = models.CharField("이름", max_length=100)
-    phone_number = models.CharField("전화번호", max_length=20, unique=True, help_text="'-' 없이 숫자만 입력해주세요. 사용자 구분을 위한 필수 항목입니다.")
     bio = models.TextField("소개", blank=True)
     profile_image = models.ImageField("프로필 사진", upload_to='profile_images/', null=True, blank=True)
 
@@ -19,7 +18,7 @@ class Person(models.Model):
     ]
     group = models.CharField("소속", max_length=20, choices=GROUP_CHOICES, default='주사랑교회')
     team = models.CharField("팀", max_length=50, blank=True)
-    role = models.CharField("역할", max_length=50, blank=True)
+    #role = models.CharField("역할", max_length=50, blank=True)
     
     # 인증 및 QR 관련
     auth_token = models.UUIDField("인증 토큰", default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
