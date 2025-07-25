@@ -59,7 +59,7 @@ def claim_profile(request, pk):
         person.save()
 
         request.session['auth_token'] = str(auth_token)
-        messages.success(request, f"'{person.name}'님의 프로필이 등록되었습니다!")
+        messages.success(request, f"{person.name}님의 프로필이 등록되었습니다!")
         return redirect(person.get_absolute_url())
     return redirect('profiles:profile_detail', pk=pk)
 
@@ -85,10 +85,12 @@ def add_scanned_person(request, pk):
             viewer = Person.objects.get(auth_token=viewer_auth_token)
             if viewer != scanned_person:
                 if scanned_person in viewer.scanned_people.all():
-                    messages.info(request, f"'{scanned_person.name}'님은 이미 만난 사람 목록에 있습니다.")
+                    # 따옴표 제거
+                    messages.info(request, f"{scanned_person.name}님은 이미 만난 사람 목록에 있습니다.")
                 else:
                     viewer.scanned_people.add(scanned_person)
-                    messages.success(request, f"'{scanned_person.name}'님을 만난 사람 목록에 추가했습니다!")
+                    # 따옴표 제거
+                    messages.success(request, f"{scanned_person.name}님을 만난 사람 목록에 추가했습니다!")
             else:
                 messages.warning(request, '자기 자신은 추가할 수 없습니다.')
         except Person.DoesNotExist:
