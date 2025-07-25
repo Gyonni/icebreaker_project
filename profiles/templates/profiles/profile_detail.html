@@ -22,7 +22,6 @@
                     </div>
                 {% endif %}
                 <h1 class="text-3xl font-bold text-gray-800">{{ person.name }}</h1>
-                <!-- 소속과 팀 정보를 표시하는 부분 추가 -->
                 <p class="text-gray-500 mt-1">{{ person.group }} / {{ person.team }}</p>
             </div>
 
@@ -42,7 +41,7 @@
             </div>
             {% endif %}
 
-            <!-- 버튼 컨테이너 (서버사이드 렌더링 로직 적용) -->
+            <!-- 버튼 컨테이너 -->
             <div class="mt-8">
                 {% if show_claim_button %}
                     <!-- Case 1: 이 프로필은 주인이 없고, 내 브라우저도 등록되지 않음 -->
@@ -55,10 +54,10 @@
 
                 {% elif viewer %}
                     {% if viewer == person %}
-                        <!-- Case 2: 내 프로필을 보고 있음 -->
-                        <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
-                            나의 프로필입니다. 다른 사람에게 QR코드를 보여주세요!
-                        </div>
+                        <!-- Case 2: 내 프로필을 보고 있음 -> 스캔 버튼과 수정 버튼 표시 (수정됨) -->
+                        <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">
+                            다른 사람 QR 스캔하기
+                        </button>
                         <a href="{% url 'profiles:profile_edit' person.id %}" class="mt-4 w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">
                             ✏️ 내 프로필 수정하기
                         </a>
@@ -97,8 +96,69 @@
                     {% endfor %}
                 </div>
             </div>
-
         </div>
     </div>
+
+    <!-- 스캐너 모달 (숨겨져 있음) -->
+    <div id="scanner-container" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 hidden">
+        <div id="reader" class="w-full max-w-md bg-white rounded-lg overflow-hidden"></div>
+        <button id="close-scan-btn" class="mt-4 bg-white text-black font-bold py-2 px-6 rounded-lg">닫기</button>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const scanButton = document.getElementById('start-scan-btn');
+            const scannerContainer = document.getElementById('scanner-container');
+            const closeScanBtn = document.getElementById('close-scan-btn');
+
+            // 내 프로필 페이지일 때만 스캔 버튼이 존재함
+            if (scanButton) {
+                const html5QrCode = new Html5Qrcode("reader");
+
+                scanButton.addEventListener('click', () => {
+                    scannerContainer.style.display = 'flex';
+                    startScanner();
+                });
+
+                closeScanBtn.addEventListener('click', () => {
+                    stopScanner();
+                });
+
+                function startScanner() {
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        onScanSuccess,
+                        (errorMessage) => { /* 스캔 실패 시 아무것도 안 함 */ }
+                    ).catch(err => {
+                        alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요.");
+                    });
+                }
+
+                function stopScanner() {
+                    html5QrCode.stop().then(ignore => {
+                        scannerContainer.style.display = 'none';
+                    }).catch(err => {
+                        console.error("스캐너 중지 실패", err);
+                        scannerContainer.style.display = 'none'; // 실패해도 일단 닫기
+                    });
+                }
+
+                function onScanSuccess(decodedText, decodedResult) {
+                    stopScanner();
+                    try {
+                        // 스캔된 텍스트가 유효한 URL인지 확인
+                        new URL(decodedText);
+                        // 유효한 URL이면 해당 페이지로 이동
+                        window.location.href = decodedText;
+                    } catch (error) {
+                        alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
