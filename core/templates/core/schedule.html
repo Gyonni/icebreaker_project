@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,12 +10,12 @@
     <style> body { font-family: 'Noto Sans KR', sans-serif; } </style>
 </head>
 <body class="bg-gray-100">
-    {% load static %}
     <div class="container mx-auto p-4">
         <header class="text-center my-8">
             <h1 class="text-3xl md:text-4xl font-black text-purple-700">수련회 일정표</h1>
         </header>
         <main class="max-w-3xl mx-auto bg-white p-2 rounded-lg shadow-lg">
+            <!-- 이미지 경로가 'core/images/schedule.jpg' (모두 소문자)인지 다시 한번 확인합니다. -->
             <img src="{% static 'core/images/schedule.jpg' %}" alt="수련회 일정표" class="w-full rounded">
         </main>
         <footer class="text-center my-8">
