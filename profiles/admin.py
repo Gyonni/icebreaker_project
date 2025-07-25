@@ -49,9 +49,9 @@ class PersonAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            # [수정] URL 이름에서 하이픈(-)을 언더스코어(_)로 변경
-            path('import-excel/', self.admin_site.admin_view(self.import_from_excel), name='import_excel'),
-            path('export-excel-all/', self.admin_site.admin_view(self.export_all_participants), name='export_excel_all'),
+            # [수정] URL 경로와 이름을 더 단순하게 변경하여 오류 해결
+            path('import/', self.admin_site.admin_view(self.import_from_excel), name='import'),
+            path('export/', self.admin_site.admin_view(self.export_all_participants), name='export'),
         ]
         return custom_urls + urls
 
