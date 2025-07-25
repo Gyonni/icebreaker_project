@@ -7,7 +7,8 @@ class Person(models.Model):
     id = models.UUIDField("고유 ID", primary_key=True, default=uuid.uuid4, editable=False)
     
     # 엑셀 업로드 및 식별용 고유 코드
-    unique_code = models.CharField("고유번호", max_length=50, unique=True, help_text="엑셀 업로드 시 사용자를 구분하는 고유한 번호 또는 코드입니다.")
+    # null=True를 추가하여 기존 데이터에 대한 마이그레이션 오류를 해결합니다.
+    unique_code = models.CharField("고유번호", max_length=50, unique=True, null=True, help_text="엑셀 업로드 시 사용자를 구분하는 고유한 번호 또는 코드입니다.")
 
     # 기본 정보
     name = models.CharField("이름", max_length=100)
@@ -30,7 +31,7 @@ class Person(models.Model):
     scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by', verbose_name="만난 사람")
 
     def __str__(self):
-        return f"{self.name} ({self.unique_code})"
+        return f"{self.name} ({self.unique_code or '고유번호 없음'})"
 
     def get_absolute_url(self):
         # 'profile_detail' URL이 profiles/urls.py에 정의되어 있어야 합니다.
