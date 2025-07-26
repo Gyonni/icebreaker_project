@@ -12,18 +12,33 @@ import datetime
 def export_as_excel(modeladmin, request, queryset):
     data = []
     for person in queryset:
+        # 1. QR 코드에 담길 내용 (프로필 페이지 주소)
         profile_url = request.build_absolute_uri(
             reverse('profiles:profile_detail', args=[str(person.id)])
         )
+        # 2. QR 코드 이미지 자체의 주소 (명찰 제작용)
+        qr_image_url = request.build_absolute_uri(
+            reverse('profiles:generate_qr', args=[str(person.id)])
+        )
         data.append({
-            "고유번호": person.unique_code, "이름": person.name, "소속": person.group,
-            "팀": person.team, "QR코드 링크": profile_url,
+            "고유번호": person.unique_code,
+            "이름": person.name,
+            "소속": person.group,
+            "팀": person.team,
+            "프로필 링크(QR내용)": profile_url,
+            "QR 이미지 주소(명찰용)": qr_image_url, # [수정] 새로운 열 추가
         })
+
     df = pd.DataFrame(data)
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     response['Content-Disposition'] = f'attachment; filename="participants_qr_{timestamp}.xlsx"'
+    
     df.to_excel(response, index=False, engine='openpyxl')
+    
     return response
 
 @admin.action(description='선택된 사용자의 인증 상태 초기화')
@@ -48,7 +63,6 @@ class PersonAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         urls = super().get_urls()
-        # [수정] URL 이름을 info 객체에서 직접 가져오도록 변경하여 오류 해결
         info = self.model._meta.app_label, self.model._meta.model_name
         custom_urls = [
             path('import-excel/', self.admin_site.admin_view(self.import_from_excel), name='%s_%s_import_excel' % info),
