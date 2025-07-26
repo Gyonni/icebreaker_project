@@ -52,11 +52,12 @@ def export_as_excel(modeladmin, request, queryset):
             # 행 높이를 조절하여 QR 코드가 들어갈 공간을 확보합니다.
             worksheet.row_dimensions[index + 2].height = 80
 
-            # QR 코드 이미지 생성
-            qr_image_url = request.build_absolute_uri(
-                reverse('profiles:generate_qr', args=[str(person.id)])
+            # ★★★ 핵심 수정 ★★★
+            # QR 코드의 내용이 '프로필 페이지 주소'가 되도록 수정합니다.
+            profile_url = request.build_absolute_uri(
+                reverse('profiles:profile_detail', args=[str(person.id)])
             )
-            qr_img = qrcode.make(qr_image_url, box_size=3)
+            qr_img = qrcode.make(profile_url, box_size=3)
             
             # 이미지를 인메모리 버퍼에 저장
             img_buffer = BytesIO()
