@@ -44,15 +44,15 @@ def export_as_excel(modeladmin, request, queryset):
         worksheet.column_dimensions['C'].width = 20
         worksheet.column_dimensions['D'].width = 20
         worksheet.column_dimensions['E'].width = 60
-        worksheet.column_dimensions['F'].width = 15 # QR 코드 이미지 열
+        # [수정] QR 코드 열의 너비를 16으로 늘립니다.
+        worksheet.column_dimensions['F'].width = 16 
         worksheet.cell(row=1, column=6, value='QR Code 이미지')
 
         # 5. 각 참가자별로 QR 코드를 생성하고 이미지로 삽입합니다.
         for index, person in enumerate(queryset):
-            # 행 높이를 조절하여 QR 코드가 들어갈 공간을 확보합니다.
-            worksheet.row_dimensions[index + 2].height = 80
+            # [수정] 행 높이를 85로 늘려 정사각형에 가까운 셀을 만듭니다.
+            worksheet.row_dimensions[index + 2].height = 85
 
-            # ★★★ 핵심 수정 ★★★
             # QR 코드의 내용이 '프로필 페이지 주소'가 되도록 수정합니다.
             profile_url = request.build_absolute_uri(
                 reverse('profiles:profile_detail', args=[str(person.id)])
@@ -66,6 +66,11 @@ def export_as_excel(modeladmin, request, queryset):
 
             # openpyxl 이미지 객체를 생성하여 워크시트에 추가
             img = OpenpyxlImage(img_buffer)
+            
+            # ★★★ 핵심 수정: 이미지 크기를 105x105 픽셀로 고정합니다. ★★★
+            img.width = 105
+            img.height = 105
+            
             worksheet.add_image(img, f'F{index + 2}')
 
     # 6. 완성된 엑셀 파일로 HTTP 응답을 생성합니다.
