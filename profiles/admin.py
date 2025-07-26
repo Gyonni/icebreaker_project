@@ -7,18 +7,19 @@ from django.http import HttpResponse
 from .models import Person
 import pandas as pd
 import datetime
+# --- [새로운 기능] QR코드 이미지 생성 및 엑셀 파일 조작을 위해 라이브러리 추가 ---
+import qrcode
+from io import BytesIO
+from openpyxl.drawing.image import Image as OpenpyxlImage
 
+# --- [수정] 엑셀 파일에 실제 QR 코드 이미지를 포함하도록 함수 수정 ---
 @admin.action(description='선택된 참가자의 QR 정보를 엑셀로 내보내기')
 def export_as_excel(modeladmin, request, queryset):
+    # 1. 텍스트 데이터를 먼저 DataFrame으로 만듭니다.
     data = []
     for person in queryset:
-        # 1. QR 코드에 담길 내용 (프로필 페이지 주소)
         profile_url = request.build_absolute_uri(
             reverse('profiles:profile_detail', args=[str(person.id)])
-        )
-        # 2. QR 코드 이미지 자체의 주소 (명찰 제작용)
-        qr_image_url = request.build_absolute_uri(
-            reverse('profiles:generate_qr', args=[str(person.id)])
         )
         data.append({
             "고유번호": person.unique_code,
@@ -26,18 +27,53 @@ def export_as_excel(modeladmin, request, queryset):
             "소속": person.group,
             "팀": person.team,
             "프로필 링크(QR내용)": profile_url,
-            "QR 이미지 주소(명찰용)": qr_image_url, # [수정] 새로운 열 추가
         })
-
     df = pd.DataFrame(data)
-    
+
+    # 2. 인메모리 버퍼에 엑셀 파일을 준비합니다.
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Participants')
+        
+        # 3. openpyxl 워크시트 객체를 가져와 직접 조작합니다.
+        worksheet = writer.sheets['Participants']
+
+        # 4. 열 너비를 설정하고 'QR Code 이미지' 헤더를 추가합니다.
+        worksheet.column_dimensions['A'].width = 15
+        worksheet.column_dimensions['B'].width = 20
+        worksheet.column_dimensions['C'].width = 20
+        worksheet.column_dimensions['D'].width = 20
+        worksheet.column_dimensions['E'].width = 60
+        worksheet.column_dimensions['F'].width = 15 # QR 코드 이미지 열
+        worksheet.cell(row=1, column=6, value='QR Code 이미지')
+
+        # 5. 각 참가자별로 QR 코드를 생성하고 이미지로 삽입합니다.
+        for index, person in enumerate(queryset):
+            # 행 높이를 조절하여 QR 코드가 들어갈 공간을 확보합니다.
+            worksheet.row_dimensions[index + 2].height = 80
+
+            # QR 코드 이미지 생성
+            qr_image_url = request.build_absolute_uri(
+                reverse('profiles:generate_qr', args=[str(person.id)])
+            )
+            qr_img = qrcode.make(qr_image_url, box_size=3)
+            
+            # 이미지를 인메모리 버퍼에 저장
+            img_buffer = BytesIO()
+            qr_img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+
+            # openpyxl 이미지 객체를 생성하여 워크시트에 추가
+            img = OpenpyxlImage(img_buffer)
+            worksheet.add_image(img, f'F{index + 2}')
+
+    # 6. 완성된 엑셀 파일로 HTTP 응답을 생성합니다.
     response = HttpResponse(
+        buffer.getvalue(),
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     response['Content-Disposition'] = f'attachment; filename="participants_qr_{timestamp}.xlsx"'
-    
-    df.to_excel(response, index=False, engine='openpyxl')
     
     return response
 
