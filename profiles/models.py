@@ -7,7 +7,12 @@ class Person(models.Model):
     id = models.UUIDField("고유 ID", primary_key=True, default=uuid.uuid4, editable=False)
     unique_code = models.CharField("고유번호", max_length=50, unique=True, null=True)
     name = models.CharField("이름", max_length=100)
-    bio = models.TextField("소개", blank=True)
+    # ----------------------- 자기 소개 문답 필드와 기도제목 필드-----------------------
+    bio_q1_answer = models.CharField("자기소개 답변 1", max_length=100, blank=True)
+    bio_q2_answer = models.CharField("자기소개 답변 2", max_length=100, blank=True)
+    bio_q3_answer = models.CharField("자기소개 답변 3", max_length=100, blank=True)
+    prayer_request = models.TextField("기도제목", blank=True)
+    # -----------------------------------------------------------------------------------    
     fun_fact = models.CharField("재미있는 사실", max_length=200, blank=True)
     profile_image = models.ImageField("프로필 사진", upload_to='profile_images/', null=True, blank=True)
     group = models.CharField("소속", max_length=20, choices=[('주사랑교회', '주사랑교회'), ('예수비전교회', '예수비전교회')], default='주사랑교회')
