@@ -249,9 +249,20 @@ def shuffle_bingo_board(request):
     viewer_auth_token = request.session.get('auth_token')
     if viewer_auth_token:
         viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
-        # [수정] UUID를 문자열(str)로 변환하여 저장합니다.
-        scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
-        random.shuffle(scanned_people_ids)
-        viewer.bingo_board_layout = scanned_people_ids
+
+        # [핵심 수정] 현재 저장된 빙고판 순서를 가져와서 다시 섞습니다.
+        # 이렇게 해야 매번 다른 결과를 보장할 수 있습니다.
+        current_layout = viewer.bingo_board_layout
+
+        # 만약 저장된 레이아웃이 없다면, 새로 생성합니다.
+        if not current_layout:
+            current_layout = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
+
+        random.shuffle(current_layout)
+        viewer.bingo_board_layout = current_layout
         viewer.save()
+
+        # [개선] 사용자에게 피드백 메시지를 보냅니다.
+        messages.success(request, "빙고판을 새로 만들었습니다!")
+
     return redirect('profiles:bingo_board')
