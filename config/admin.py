@@ -12,6 +12,7 @@ class GameStatusAdmin(admin.ModelAdmin):
         custom_urls = [
             path('toggle-3t1l/', self.toggle_3t1l_status, name='toggle_3t1l'),
             path('toggle-bingo/', self.toggle_bingo_status, name='toggle_bingo'),
+            path('toggle-shuffle/', self.toggle_bingo_shuffle_status, name='toggle_shuffle'),
         ]
         return custom_urls + urls
 
@@ -30,6 +31,12 @@ class GameStatusAdmin(admin.ModelAdmin):
         status.is_bingo_active = not status.is_bingo_active
         status.save()
         return HttpResponseRedirect("../")
+
+    def toggle_bingo_shuffle_status(self, request):
+        status = self.get_game_status()
+        status.can_shuffle_bingo = not status.can_shuffle_bingo
+        status.save()
+        return HttpResponseRedirect("../")    
 
     def has_add_permission(self, request):
         return False

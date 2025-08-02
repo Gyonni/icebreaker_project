@@ -16,4 +16,11 @@
     {% else %}
         <li><a href="toggle-bingo/" class="button" style="background-color: #28a745;">빙고 게임 시작</a></li>
     {% endif %}
+    
+    <!-- 빙고판 섞기 제어 버튼 -->
+    {% if cl.model_admin.get_game_status.can_shuffle_bingo %}
+        <li><a href="toggle-shuffle/" class="button" style="background-color: #dc3545;">빙고판 섞기 비활성화</a></li>
+    {% else %}
+        <li><a href="toggle-shuffle/" class="button" style="background-color: #28a745;">빙고판 섞기 활성화</a></li>
+    {% endif %}
 {% endblock %}

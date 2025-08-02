@@ -178,22 +178,29 @@ def bingo_board(request):
 
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
-        scanned_people = list(viewer.scanned_people.all())
 
-        # 4x4 빙고판을 위해 16칸을 채웁니다.
+        # [수정] 빙고판 로직 변경
+        if not viewer.bingo_board_layout: # 빙고판이 저장된게 없다면
+            scanned_people_ids = list(viewer.scanned_people.values_list('id', flat=True))
+            random.shuffle(scanned_people_ids)
+            viewer.bingo_board_layout = scanned_people_ids
+            viewer.save()
+
+        # 저장된 순서대로 사람 객체를 불러옵니다.
+        board_ids = viewer.bingo_board_layout
+        board_people = {str(p.id): p for p in Person.objects.filter(id__in=board_ids)}
+        board_items = [board_people.get(str(pid)) for pid in board_ids]
+
         board_size = 16
-        board_items = scanned_people[:board_size]
-
-        # 16명이 안되면 빈칸으로 채웁니다.
         while len(board_items) < board_size:
             board_items.append(None)
 
-        # 빙고판을 위해 순서를 섞습니다.
-        random.shuffle(board_items)
+        game_status, _ = GameStatus.objects.get_or_create(pk=1)
 
         context = {
             'viewer': viewer,
-            'board_items': board_items
+            'board_items': board_items[:board_size],
+            'can_shuffle': game_status.can_shuffle_bingo,
         }
         return render(request, 'profiles/bingo_board.html', context)
 
@@ -237,3 +244,15 @@ def reset_all_picks(request):
     # 모든 사람의 was_picked 상태를 False로 되돌립니다.
     updated_count = Person.objects.update(was_picked=False)
     return JsonResponse({'status': 'success', 'message': f'{updated_count}명의 뽑기 상태를 초기화했습니다.'})
+
+# [새로운 기능] 빙고판을 다시 섞는 뷰
+@require_POST
+def shuffle_bingo_board(request):
+    viewer_auth_token = request.session.get('auth_token')
+    if viewer_auth_token:
+        viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
+        scanned_people_ids = list(viewer.scanned_people.values_list('id', flat=True))
+        random.shuffle(scanned_people_ids)
+        viewer.bingo_board_layout = scanned_people_ids
+        viewer.save()
+    return redirect('profiles:bingo_board')
