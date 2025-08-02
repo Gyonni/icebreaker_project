@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.db.models import Count
 from django.utils.html import format_html
 from django.http import HttpResponse
-from .models import Person
+from .models import Person, Reaction
 import pandas as pd
 import datetime
 # --- [새로운 기능] QR코드 이미지 생성 및 엑셀 파일 조작을 위해 라이브러리 추가 ---
@@ -97,7 +97,12 @@ def reset_scanned_people(modeladmin, request, queryset):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'unique_code', 'group', 'team', 'is_authenticated', 'scanned_count', 'view_qr_code')
+    # [수정] list_display에 새로운 이모티콘 카운트 필드를 추가합니다.
+    list_display = (
+        'name', 'unique_code', 'group', 'team', 
+        'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
+        'is_authenticated', 'scanned_count'
+    )
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
     actions = [reset_authentication, reset_scanned_people, export_as_excel]
@@ -161,3 +166,24 @@ class PersonAdmin(admin.ModelAdmin):
         except Exception:
             return "URL 확인 필요"
     view_qr_code.short_description = "QR Code 생성"
+
+# --- [새로운 기능] Reaction 모델을 관리자 페이지에 등록 ---
+@admin.register(Reaction)
+class ReactionAdmin(admin.ModelAdmin):
+    # 목록에 보일 필드들을 지정합니다.
+    list_display = ('receiver', 'reactor', 'emoji_type', 'timestamp')
+    # 필터 기능을 추가하여 특정 참가자나 이모티콘 종류별로 쉽게 찾아볼 수 있습니다.
+    list_filter = ('emoji_type', 'receiver__name')
+    # 검색 기능을 추가합니다.
+    search_fields = ('reactor__username', 'receiver__name')
+    # 관리자 페이지에서는 반응을 직접 추가/수정/삭제할 수 없도록 읽기 전용으로 설정합니다.
+    readonly_fields = ('reactor', 'receiver', 'emoji_type', 'timestamp')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
