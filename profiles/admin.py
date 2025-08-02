@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.db.models import Count
 from django.utils.html import format_html
 from django.http import HttpResponse
-from .models import Person, Reaction
+from .models import Person, Reaction 
 import pandas as pd
 import datetime
 import qrcode
@@ -31,8 +31,8 @@ def export_as_excel(modeladmin, request, queryset):
         worksheet.cell(row=1, column=6, value='QR Code 이미지')
         for index, person in enumerate(queryset):
             worksheet.row_dimensions[index + 2].height = 85
-            qr_url = request.build_absolute_uri(reverse('profiles:profile_detail', args=[str(person.id)]))
-            qr_img = qrcode.make(qr_url, box_size=3)
+            profile_url = request.build_absolute_uri(reverse('profiles:profile_detail', args=[str(person.id)]))
+            qr_img = qrcode.make(profile_url, box_size=3)
             img_buffer = BytesIO()
             qr_img.save(img_buffer, format='PNG')
             img_buffer.seek(0)
@@ -59,6 +59,7 @@ def reset_scanned_people(modeladmin, request, queryset):
     for person in queryset:
         person.scanned_people.clear()
     messages.success(request, f"{count}명의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
+
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
@@ -122,20 +123,21 @@ class PersonAdmin(admin.ModelAdmin):
         return obj._scanned_count
     scanned_count.short_description = '만난 사람 수'
     scanned_count.admin_order_field = '_scanned_count'
-    
+
     def view_qr_code(self, obj):
         try:
             url = reverse('profiles:generate_qr', args=[obj.id])
             return format_html('<a href="{}" target="_blank">QR코드 보기</a>', url)
         except Exception:
             return "URL 확인 필요"
-    view_qr_code.short_description = "QR Code 생성"    
+    view_qr_code.short_description = "QR Code 생성"
+
 
 @admin.register(Reaction)
 class ReactionAdmin(admin.ModelAdmin):
     list_display = ('receiver', 'reactor', 'emoji_type', 'timestamp')
     list_filter = ('emoji_type', 'receiver__name', 'reactor__name')
-    search_fields = ('reactor__name', 'receiver__name') # reactor__username -> reactor__name
+    search_fields = ('reactor__name', 'receiver__name')
     readonly_fields = ('reactor', 'receiver', 'emoji_type', 'timestamp')
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
