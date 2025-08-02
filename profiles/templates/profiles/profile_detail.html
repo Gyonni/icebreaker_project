@@ -47,7 +47,6 @@
                 {% elif viewer %}
                     {% if viewer.id == person.id %}
                         <div class="grid grid-cols-2 gap-3">
-                            <!-- [수정] QR 스캔 버튼이 다시 작동하도록 id를 정확히 부여합니다. -->
                             <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">QR 스캔하기</button>
                             <a href="{% url 'profiles:profile_edit' person.id %}" class="w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">프로필 수정</a>
                         </div>
@@ -207,20 +206,90 @@
 
         const gameContainer = document.getElementById('game-container');
         if (gameContainer) {
-            // ... (3T1L 게임 스크립트는 이전과 동일) ...
+            const showBtn = document.getElementById('show-3t1l-btn');
+            const sentencesContainer = document.getElementById('sentences-container');
+            const revealBtn = document.getElementById('reveal-answer-btn');
+            const emojiContainer = document.getElementById('emoji-container');
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            showBtn.addEventListener('click', () => {
+                showBtn.style.display = 'none';
+                sentencesContainer.style.display = 'block';
+            });
+
+            revealBtn.addEventListener('click', async () => {
+                const formData = new FormData();
+                formData.append('action', 'reveal_answer');
+
+                const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.querySelectorAll('[data-number]').forEach(el => {
+                        if (parseInt(el.dataset.number) === data.lie_answer_number) {
+                            el.classList.add('bg-red-200', 'text-red-800');
+                        }
+                    });
+                    revealBtn.style.display = 'none';
+                    emojiContainer.style.display = 'block';
+                } else {
+                    alert(data.message);
+                }
+            });
+
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    const emojiType = btn.dataset.emoji;
+                    const formData = new FormData();
+                    formData.append('action', 'send_emoji');
+                    formData.append('emoji_type', emojiType);
+
+                    const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    alert(data.message);
+                    document.querySelectorAll('.emoji-btn').forEach(b => b.disabled = true);
+                    btn.classList.add('ring-4', 'ring-yellow-400');
+                });
+            });
         }
-        
-        // ... (Django 메시지 스크립트는 이전과 동일) ...
+
+        {% if messages %}
+            let message_data = [];
+            {% for message in messages %}
+                message_data.push("{{ message }}");
+            {% endfor %}
+            if (message_data.length > 0) {
+                alert(message_data.join("\n"));
+            }
+        {% endif %}
 
         // 아코디언 메뉴 스크립트 (하나만 열리도록)
         const details = document.querySelectorAll("details");
         details.forEach((targetDetail) => {
-            targetDetail.addEventListener("click", () => {
-                details.forEach((detail) => {
-                    if (detail !== targetDetail) {
-                        detail.removeAttribute("open");
-                    }
-                });
+            targetDetail.addEventListener("click", (event) => {
+                // 링크 클릭 시에는 아코디언 동작을 막습니다.
+                if (event.target.closest('a')) {
+                    return;
+                }
+                
+                // summary를 클릭했을 때만 다른 details를 닫습니다.
+                if (event.target.closest('summary')) {
+                    details.forEach((detail) => {
+                        if (detail !== targetDetail) {
+                            detail.removeAttribute("open");
+                        }
+                    });
+                }
             });
         });
     });

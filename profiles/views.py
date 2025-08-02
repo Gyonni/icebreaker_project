@@ -170,18 +170,23 @@ def add_scanned_person(request, pk):
     return redirect('profiles:profile_detail', pk=pk)
 
 def _create_shuffled_bingo_layout(viewer):
-    """Helper function to create a new shuffled bingo board layout."""
+    """[새로운 헬퍼 함수] 섞인 빙고판 레이아웃을 생성합니다."""
     scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
     board_size = 16
 
-    # 16칸짜리 리스트를 만듭니다.
-    full_board_items = scanned_people_ids[:board_size]
+    # 만난 사람이 16명보다 많으면, 그 중에서 16명을 무작위로 선택합니다.
+    if len(scanned_people_ids) > board_size:
+        selected_ids = random.sample(scanned_people_ids, board_size)
+    else:
+        selected_ids = scanned_people_ids
+
+    # 16칸을 채우기 위해 부족한 만큼 빈 칸(None)을 추가합니다.
+    full_board_items = selected_ids
     while len(full_board_items) < board_size:
-        full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
+        full_board_items.append(None)
 
-    # [핵심 수정] 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
+    # 최종 16칸(이름 + 빈 칸)을 다시 한번 섞어줍니다.
     random.shuffle(full_board_items)
-
     return full_board_items
 
 def bingo_board(request):
@@ -193,12 +198,11 @@ def bingo_board(request):
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
 
-        # [핵심 수정] 저장된 빙고판이 16칸이 아니거나, 없다면 새로 생성합니다.
-        if len(viewer.bingo_board_layout) != 16:
+        # [수정] 저장된 빙고판이 없거나, 칸 수가 맞지 않으면 새로 생성합니다.
+        if not viewer.bingo_board_layout or len(viewer.bingo_board_layout) != 16:
             viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
             viewer.save()
 
-        # 저장된 순서대로 사람 객체를 불러옵니다.
         board_ids_with_none = viewer.bingo_board_layout
         board_ids = [pid for pid in board_ids_with_none if pid is not None]
 
@@ -217,6 +221,7 @@ def bingo_board(request):
         request.session.pop('auth_token', None)
         messages.error(request, "사용자 정보를 찾을 수 없습니다.")
         return redirect('core:index')
+
 
 
 
@@ -256,17 +261,13 @@ def reset_all_picks(request):
     updated_count = Person.objects.update(was_picked=False)
     return JsonResponse({'status': 'success', 'message': f'{updated_count}명의 뽑기 상태를 초기화했습니다.'})
 
-# [새로운 기능] 빙고판을 다시 섞는 뷰
 @require_POST
 def shuffle_bingo_board(request):
     viewer_auth_token = request.session.get('auth_token')
     if viewer_auth_token:
         viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
-
-        # 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
+        # [수정] 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
         viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
         viewer.save()
-
         messages.success(request, "빙고판을 새로 만들었습니다!")
-
     return redirect('profiles:bingo_board')
