@@ -26,12 +26,17 @@ def profile_detail(request, pk):
 
     # [수정] 3T1L 문장들을 랜덤하게 섞어서 전달
     sentences = []
-    if person.truth1 and person.truth2 and person.truth3 and person.lie:
+    lie_content = ""
+    if person.lie_answer:
+        all_sentences = [person.sentence1, person.sentence2, person.sentence3, person.sentence4]
+        # 사용자가 선택한 정답 번호에 해당하는 문장을 lie_content로 지정
+        lie_content = all_sentences[person.lie_answer - 1]
+
+        # 화면에 보여줄 문장 목록 생성 (순서는 항상 1,2,3,4)
         sentences = [
-            (1, person.truth1), (2, person.truth2), 
-            (3, person.truth3), (4, person.lie)
+            (1, person.sentence1), (2, person.sentence2),
+            (3, person.sentence3), (4, person.sentence4)
         ]
-        random.shuffle(sentences)
 
     if viewer and person != viewer:
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
@@ -42,6 +47,7 @@ def profile_detail(request, pk):
         'show_claim_button': show_claim_button,
         'is_already_scanned': is_already_scanned,
         'sentences': sentences,
+        'lie_answer_number': person.lie_answer,
     }
     return render(request, 'profiles/profile_detail.html', context)
 
@@ -62,8 +68,10 @@ def play_3t1l(request, pk):
     action = request.POST.get('action')
 
     if action == 'reveal_answer':
-        # 정답(거짓말 문장)을 알려줍니다.
-        return JsonResponse({'status': 'success', 'lie_sentence': receiver.lie})
+        # [수정] lie_answer를 기준으로 진짜 거짓말 문장을 찾아서 반환
+        all_sentences = [receiver.sentence1, receiver.sentence2, receiver.sentence3, receiver.sentence4]
+        lie_content = all_sentences[receiver.lie_answer - 1]
+        return JsonResponse({'status': 'success', 'lie_answer_number': receiver.lie_answer})
 
     elif action == 'send_emoji':
         emoji_type = request.POST.get('emoji_type')

@@ -89,21 +89,25 @@
                     <button id="show-3t1l-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-gray-700 hover:bg-gray-800">🤫 3 Truths 1 Lie 보기</button>
                     <div id="sentences-container" class="hidden space-y-3 text-left mt-4">
                         {% for number, sentence in sentences %}
-                        <div class="bg-gray-100 p-3 rounded-lg" data-sentence="{{ sentence }}">
-                            <span class="font-bold text-purple-600 mr-2">{{ forloop.counter }}.</span>
+                        <div class="bg-gray-100 p-3 rounded-lg" data-number="{{ number }}">
+                            <span class="font-bold text-purple-600 mr-2">{{ number }}.</span>
                             <span>{{ sentence }}</span>
                         </div>
                         {% endfor %}
                         <button id="reveal-answer-btn" class="mt-4 w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-red-600 hover:bg-red-700">🙌 대화를 완료했어요!</button>
                     </div>
                     <div id="emoji-container" class="hidden mt-4">
-                        <p class="font-semibold mb-3">대화 후의 감상을 이모티콘으로 선물하세요!</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button data-emoji="laughed" class="emoji-btn">😂 완전 속았네!</button>
-                            <button data-emoji="touched" class="emoji-btn">😭 감동적인 이야기</button>
-                            <button data-emoji="tmi" class="emoji-btn">👍 최고의 TMI</button>
-                            <button data-emoji="wow" class="emoji-btn">🤯 대박이에요!</button>
-                        </div>
+                        {% if has_reacted %}
+                            <p class="font-semibold mb-3 text-green-600">이모티콘 선물이 완료되었습니다!</p>
+                        {% else %}
+                            <p class="font-semibold mb-3">대화 후의 감상을 이모티콘으로 선물하세요!</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button data-emoji="laughed" class="emoji-btn">😂 완전 속았네!</button>
+                                <button data-emoji="touched" class="emoji-btn">😭 감동적인 이야기</button>
+                                <button data-emoji="tmi" class="emoji-btn">👍 최고의 TMI</button>
+                                <button data-emoji="wow" class="emoji-btn">🤯 대박이에요!</button>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

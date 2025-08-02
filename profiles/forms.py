@@ -8,27 +8,24 @@ import os
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Person
-        # [수정] 3T1L 필드들을 추가합니다.
+        # [수정] 필드 이름을 sentence1~4로 변경
         fields = [
             'name', 'bio', 'fun_fact', 'profile_image',
-            'truth1', 'truth2', 'truth3', 'lie', 'lie_answer'
+            'sentence1', 'sentence2', 'sentence3', 'sentence4', 'lie_answer'
         ]
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'fun_fact': forms.TextInput(attrs={'class': 'form-control'}),
-            'profile_image': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
-            # 3T1L 필드에 대한 위젯 추가
-            'truth1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '진실 1'}),
-            'truth2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '진실 2'}),
-            'truth3': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '진실 3'}),
-            'lie': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '거짓말'}),
+            # ... (name, bio 등은 이전과 동일) ...
+            'sentence1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '첫 번째 문장'}),
+            'sentence2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '두 번째 문장'}),
+            'sentence3': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '세 번째 문장'}),
+            'sentence4': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '네 번째 문장'}),
             'lie_answer': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'name': '이름', 'bio': '소개', 'fun_fact': '재미있는 사실',
-            'profile_image': '프로필 사진', 'truth1': '진실 1', 'truth2': '진실 2',
-            'truth3': '진실 3', 'lie': '거짓말', 'lie_answer': '어떤 문장이 거짓말인가요?',
+            'profile_image': '프로필 사진', 'sentence1': '문장 1', 'sentence2': '문장 2',
+            'sentence3': '문장 3', 'sentence4': '문장 4', 
+            'lie_answer': '몇 번 문장이 거짓말인가요?',
         }
 
     def clean_profile_image(self, *args, **kwargs):
