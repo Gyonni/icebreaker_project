@@ -126,8 +126,8 @@ class PersonAdmin(admin.ModelAdmin):
 @admin.register(Reaction)
 class ReactionAdmin(admin.ModelAdmin):
     list_display = ('receiver', 'reactor', 'emoji_type', 'timestamp')
-    list_filter = ('emoji_type', 'receiver__name')
-    search_fields = ('reactor__username', 'receiver__name')
+    list_filter = ('emoji_type', 'receiver__name', 'reactor__name')
+    search_fields = ('reactor__name', 'receiver__name') # reactor__username -> reactor__name
     readonly_fields = ('reactor', 'receiver', 'emoji_type', 'timestamp')
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
