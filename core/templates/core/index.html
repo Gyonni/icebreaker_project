@@ -12,9 +12,8 @@
     </style>
 </head>
 <body class="relative w-full h-screen overflow-hidden bg-black">
-    <!-- 배경 이미지 및 어두운 오버레이 -->
+    <!-- 배경 이미지 -->
     <div class="absolute inset-0 z-0 flex items-center justify-center">
-        <!-- [수정] object-cover를 object-contain으로 변경하여 세로 비율 유지 -->
         <img src="{% static 'core/images/main_image.jpg' %}" alt="메인 배경 이미지" class="w-full h-full object-contain">
     </div>
     <div class="absolute inset-0 z-0 bg-black opacity-50"></div>
@@ -22,14 +21,13 @@
     <!-- 콘텐츠 컨테이너 -->
     <div class="relative z-10 flex flex-col items-center justify-center h-full p-4 text-white">
         <header class="text-center">
-            <!-- [수정] 화면 너비에 따라 글자 크기가 바뀌도록 반응형 클래스 추가 (text-3xl sm:text-4xl md:text-6xl) -->
             <h1 class="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight">Jusarang X JesusVision</h1>
             <p class="text-xl md:text-2xl mt-2 opacity-90">2025 연합 수련회</p>
         </header>
         
         <!-- 메뉴 (세로 배열로 수정) -->
         <main class="flex flex-col items-center gap-6 max-w-md w-full mx-auto mt-12">
-            <!-- 수련회 일정 버튼 -->
+            <!-- 1. 수련회 일정 버튼 -->
             <a href="{% url 'core:schedule' %}" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
                 <div class="flex items-center">
                     <div class="bg-purple-500/80 p-4 rounded-lg">
@@ -41,22 +39,9 @@
                     </div>
                 </div>
             </a>
-            <!-- 장소 안내 버튼 -->
-            <div class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg cursor-not-allowed opacity-60">
-                <div class="flex items-center">
-                    <div class="bg-green-500/80 p-4 rounded-lg">
-                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </div>
-                    <div class="ml-4">
-                        <h2 class="text-xl font-bold">장소 안내 (준비중)</h2>
-                        <p class="opacity-80">오시는 길을 안내합니다.</p>
-                    </div>
-                </div>
-            </div>
-            <!-- 내 프로필 보기 버튼 (새로 추가) -->
+            
+            <!-- 2. 내 프로필 보기 버튼 -->
             {% if viewer_profile_id %}
-                <!-- Case 1: 이미 인증된 사용자일 경우 -> 바로 프로필로 이동하는 링크 -->
-                <!-- [수정] 다른 버튼과 디자인 통일 -->
                 <a href="{% url 'profiles:profile_detail' viewer_profile_id %}" id="my-profile-btn" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
                     <div class="flex items-center">
                         <div class="bg-blue-500/80 p-4 rounded-lg">
@@ -69,8 +54,6 @@
                     </div>
                 </a>
             {% else %}
-                <!-- Case 2: 아직 인증되지 않은 사용자일 경우 -> QR 스캐너를 여는 버튼 -->
-                <!-- [수정] 다른 버튼과 디자인 통일 -->
                 <button id="my-profile-btn" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300 text-left">
                     <div class="flex items-center">
                         <div class="bg-blue-500/80 p-4 rounded-lg">
@@ -83,6 +66,19 @@
                     </div>
                 </button>
             {% endif %}
+
+            <!-- 3. 레크리에이션 버튼 (비활성화) -->
+            <div class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg cursor-not-allowed opacity-60">
+                <div class="flex items-center">
+                    <div class="bg-yellow-500/80 p-4 rounded-lg">
+                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">레크리에이션 (준비중)</h2>
+                        <p class="opacity-80">실시간 조별 점수를 확인합니다.</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -97,7 +93,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const myProfileBtn = document.getElementById('my-profile-btn');
             
-            // 버튼이 존재하고, 'BUTTON' 태그일 때만 (즉, 인증되지 않았을 때만) 스캐너 로직을 실행합니다.
             if (myProfileBtn && myProfileBtn.tagName === 'BUTTON') {
                 const scannerContainer = document.getElementById('scanner-container');
                 const closeScanBtn = document.getElementById('close-scan-btn');
