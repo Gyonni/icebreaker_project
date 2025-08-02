@@ -66,7 +66,8 @@
                     {% if viewer.id == person.id %}
                         <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">다른 사람 QR 스캔하기</button>
                         <a href="{% url 'profiles:profile_edit' person.id %}" class="w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">✏️ 내 프로필 수정하기</a>
-                    {% else %}
+                        <a href="{% url 'profiles:bingo_board' %}" class="w-full text-center block bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-300 transition-colors">🎲 나의 빙고판 보기</a>
+                        {% else %}
                         {% if is_already_scanned %}
                             <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">✅ 이미 만난 사람입니다</button>
                         {% else %}

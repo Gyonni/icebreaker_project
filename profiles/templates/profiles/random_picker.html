@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사회자용 랜덤 뽑기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-800 text-white flex flex-col items-center justify-center h-screen p-4">
+    <div id="profile-display" class="w-full max-w-2xl bg-white text-gray-800 rounded-xl shadow-lg p-8 text-center transition-opacity duration-500 opacity-0">
+        <!-- 프로필 내용이 여기에 동적으로 채워집니다 -->
+    </div>
+    <button id="draw-btn" class="mt-8 bg-yellow-400 text-gray-900 font-bold text-2xl py-4 px-10 rounded-lg shadow-lg hover:bg-yellow-300 transition-transform duration-200 hover:scale-105">
+        다음 사람 뽑기!
+    </button>
+    <script>
+        const display = document.getElementById('profile-display');
+        const drawBtn = document.getElementById('draw-btn');
+
+        async function drawNextPerson() {
+            display.classList.add('opacity-0');
+            drawBtn.disabled = true;
+            drawBtn.textContent = '뽑는 중...';
+
+            try {
+                const response = await fetch("{% url 'profiles:get_random_profile_data' %}");
+                const person = await response.json();
+
+                let sentencesHtml = person.sentences.map((sentence, index) => {
+                    const isLie = (index + 1) === person.lie_answer_number;
+                    const bgColor = isLie ? 'bg-red-100' : 'bg-gray-100';
+                    const textColor = isLie ? 'text-red-800' : 'text-gray-700';
+                    return `<div class="${bgColor} ${textColor} p-3 rounded-lg text-left"><span class="font-bold mr-2">${index + 1}.</span>${sentence}</div>`;
+                }).join('');
+
+                display.innerHTML = `
+                    <img src="${person.profile_image_url || 'https://placehold.co/150x150/EFEFEF/AAAAAA?text=No+Image'}" class="w-32 h-32 rounded-full object-cover mx-auto border-4 border-white shadow-md mb-4">
+                    <h1 class="text-4xl font-bold">${person.name}</h1>
+                    <p class="text-gray-500 mt-1 text-lg">${person.group} / ${person.team}</p>
+                    <div class="mt-6 space-y-2">${sentencesHtml}</div>
+                `;
+                display.classList.remove('opacity-0');
+            } catch (error) {
+                display.innerHTML = '<p class="text-red-500">오류가 발생했습니다. 다시 시도해주세요.</p>';
+                display.classList.remove('opacity-0');
+            } finally {
+                drawBtn.disabled = false;
+                drawBtn.textContent = '다음 사람 뽑기!';
+            }
+        }
+        drawBtn.addEventListener('click', drawNextPerson);
+        // 페이지 로드 시 첫 번째 사람을 바로 뽑습니다.
+        drawNextPerson();
+    </script>
+</body>
+</html>

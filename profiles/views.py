@@ -166,3 +166,65 @@ def add_scanned_person(request, pk):
             
         return redirect(scanned_person.get_absolute_url())
     return redirect('profiles:profile_detail', pk=pk)
+
+def bingo_board(request):
+    viewer_auth_token = request.session.get('auth_token')
+    if not viewer_auth_token:
+        # 인증되지 않은 사용자는 홈페이지로 보냅니다.
+        messages.warning(request, "먼저 본인의 프로필을 등록해주세요.")
+        return redirect('core:index')
+
+    try:
+        viewer = Person.objects.get(auth_token=viewer_auth_token)
+        scanned_people = list(viewer.scanned_people.all())
+
+        # 4x4 빙고판을 위해 16칸을 채웁니다.
+        board_size = 16
+        board_items = scanned_people[:board_size]
+
+        # 16명이 안되면 빈칸으로 채웁니다.
+        while len(board_items) < board_size:
+            board_items.append(None)
+
+        # 빙고판을 위해 순서를 섞습니다.
+        random.shuffle(board_items)
+
+        context = {
+            'viewer': viewer,
+            'board_items': board_items
+        }
+        return render(request, 'profiles/bingo_board.html', context)
+
+    except Person.DoesNotExist:
+        request.session.pop('auth_token', None)
+        messages.error(request, "사용자 정보를 찾을 수 없습니다.")
+        return redirect('core:index')
+
+def random_profile_picker(request):
+    # 사회자용 페이지를 렌더링합니다.
+    return render(request, 'profiles/random_picker.html')
+
+def get_random_profile_data(request):
+    # 전체 참가자 목록에서 한 명을 무작위로 선택합니다.
+    all_people = Person.objects.all()
+    if not all_people:
+        return JsonResponse({'error': 'No participants found'}, status=404)
+
+    random_person = random.choice(all_people)
+
+    # JSON으로 전달할 데이터를 구성합니다.
+    data = {
+        'id': random_person.id,
+        'name': random_person.name,
+        'group': random_person.group,
+        'team': random_person.team,
+        'profile_image_url': random_person.profile_image.url if random_person.profile_image else None,
+        'sentences': [
+            random_person.sentence1,
+            random_person.sentence2,
+            random_person.sentence3,
+            random_person.sentence4,
+        ],
+        'lie_answer_number': random_person.lie_answer,
+    }
+    return JsonResponse(data)
