@@ -198,11 +198,20 @@ def bingo_board(request):
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
 
-        # [수정] 저장된 빙고판이 없거나, 칸 수가 맞지 않으면 새로 생성합니다.
-        if not viewer.bingo_board_layout or len(viewer.bingo_board_layout) != 16:
+        # --- [핵심 수정] 빙고판 자동 업데이트 로직 ---
+
+        # 1. 현재 저장된 빙고판의 '사람' ID 목록을 가져옵니다.
+        saved_person_ids = set([pid for pid in viewer.bingo_board_layout if pid is not None])
+
+        # 2. 현재 '실제' 만난 사람 ID 목록을 가져옵니다.
+        current_scanned_ids = set([str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)])
+
+        # 3. 두 목록이 다르거나, 빙고판이 없으면 새로 생성합니다.
+        if not viewer.bingo_board_layout or saved_person_ids != current_scanned_ids:
             viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
             viewer.save()
 
+        # --- (이하 로직은 이전과 동일) ---
         board_ids_with_none = viewer.bingo_board_layout
         board_ids = [pid for pid in board_ids_with_none if pid is not None]
 
@@ -221,9 +230,6 @@ def bingo_board(request):
         request.session.pop('auth_token', None)
         messages.error(request, "사용자 정보를 찾을 수 없습니다.")
         return redirect('core:index')
-
-
-
 
 def random_profile_picker(request):
     # 사회자용 페이지를 렌더링합니다.
