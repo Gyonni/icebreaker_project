@@ -54,17 +54,18 @@
                             <a href="{% url 'profiles:bingo_board' %}" class="w-full text-center block bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-300 transition-colors">🎲 나의 빙고판 보기</a>
                         {% endif %}
                     {% else %}
+                        <!-- [핵심 수정] '목록에 추가' 버튼을 제거하고, 이미 만났을 경우에만 버튼을 보여줍니다. -->
                         {% if is_already_scanned %}
                             <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">✅ 이미 만난 사람입니다</button>
                         {% else %}
-                            <form action="{% url 'profiles:add_scanned_person' person.id %}" method="post">
-                                {% csrf_token %}
-                                <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700">👋 '{{ person.name }}'님 만났습니다! 목록에 추가</button>
-                            </form>
+                            <!-- 아직 만나지 않았다면, 아래 3T1L 게임을 통해 추가할 수 있습니다. -->
+                            <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                                아래 3T1L 게임을 통해 이 사람을 만나보세요!
+                            </div>
                         {% endif %}
                     {% endif %}
                 {% else %}
-                     <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.</div>
+                    <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.</div>
                 {% endif %}
             </div>
 

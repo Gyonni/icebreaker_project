@@ -70,7 +70,6 @@ def play_3t1l(request, pk):
     action = request.POST.get('action')
 
     if action == 'reveal_answer':
-        # [수정] lie_answer를 기준으로 진짜 거짓말 문장을 찾아서 반환
         all_sentences = [receiver.sentence1, receiver.sentence2, receiver.sentence3, receiver.sentence4]
         lie_content = all_sentences[receiver.lie_answer - 1]
         return JsonResponse({'status': 'success', 'lie_answer_number': receiver.lie_answer})
@@ -78,27 +77,28 @@ def play_3t1l(request, pk):
     elif action == 'send_emoji':
         emoji_type = request.POST.get('emoji_type')
 
-        # 이미 해당 이모티콘으로 반응했는지 확인
-        if Reaction.objects.filter(reactor=viewer, receiver=receiver, emoji_type=emoji_type).exists():
-            return JsonResponse({'status': 'info', 'message': '이미 보낸 이모티콘입니다.'})
+        if Reaction.objects.filter(reactor=viewer, receiver=receiver).exists():
+            return JsonResponse({'status': 'info', 'message': '이미 이모티콘을 보냈습니다.'})
 
-        # 반응 기록 생성
         Reaction.objects.create(reactor=viewer, receiver=receiver, emoji_type=emoji_type)
 
-        # 참가자의 이모티콘 카운트 증가
-        if emoji_type == 'laughed':
-            receiver.emoji_laughed_count += 1
-        elif emoji_type == 'touched':
-            receiver.emoji_touched_count += 1
-        elif emoji_type == 'tmi':
-            receiver.emoji_tmi_count += 1
-        elif emoji_type == 'wow':
-            receiver.emoji_wow_count += 1
+        if emoji_type == 'laughed': receiver.emoji_laughed_count += 1
+        elif emoji_type == 'touched': receiver.emoji_touched_count += 1
+        elif emoji_type == 'tmi': receiver.emoji_tmi_count += 1
+        elif emoji_type == 'wow': receiver.emoji_wow_count += 1
         receiver.save()
 
-        return JsonResponse({'status': 'success', 'message': '이모티콘을 보냈습니다!'})
+        # --- [핵심 수정] 이모티콘을 보내면 자동으로 만난 사람 목록에 추가합니다. ---
+        if not viewer.scanned_people.filter(pk=receiver.pk).exists():
+            viewer.scanned_people.add(receiver)
+            message = "이모티콘을 보내고 만난 사람 목록에 추가했습니다!"
+        else:
+            message = "이모티콘을 보냈습니다!"
+
+        return JsonResponse({'status': 'success', 'message': message})
 
     return JsonResponse({'status': 'error', 'message': '알 수 없는 요청입니다.'}, status=400)
+
 def profile_edit(request, pk):
     person = get_object_or_404(Person, pk=pk)
     
