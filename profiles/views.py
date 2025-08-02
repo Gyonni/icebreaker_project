@@ -193,8 +193,8 @@ def bingo_board(request):
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
 
-        # 빙고판이 저장된게 없다면 새로 생성
-        if not viewer.bingo_board_layout:
+        # [핵심 수정] 저장된 빙고판이 16칸이 아니거나, 없다면 새로 생성합니다.
+        if len(viewer.bingo_board_layout) != 16:
             viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
             viewer.save()
 
