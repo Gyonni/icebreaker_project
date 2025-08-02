@@ -15,6 +15,7 @@ class Person(models.Model):
     auth_token = models.UUIDField("인증 토큰", default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
     is_authenticated = models.BooleanField("인증여부", default=False)
     scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by')
+    was_picked = models.BooleanField("사회자 뽑기 여부", default=False)
 
     # --- [핵심 수정] 3T1L 필드 이름 및 제목 변경 ---
     sentence1 = models.CharField("문장 1", max_length=255, blank=True)
