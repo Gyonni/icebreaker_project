@@ -88,7 +88,7 @@ def play_3t1l(request, pk):
         elif emoji_type == 'wow': receiver.emoji_wow_count += 1
         receiver.save()
 
-        # --- [핵심 수정] 이모티콘을 보내면 자동으로 만난 사람 목록에 추가합니다. ---
+        # --- [핵심] 이모티콘을 보내면 자동으로 만난 사람 목록에 추가합니다. ---
         if not viewer.scanned_people.filter(pk=receiver.pk).exists():
             viewer.scanned_people.add(receiver)
             message = "이모티콘을 보내고 만난 사람 목록에 추가했습니다!"
