@@ -1,18 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.contrib import messages
-from .models import Person
-# forms.py에 이미지 리사이징 기능이 추가되었습니다.
-from .forms import ProfileForm 
+from django.views.decorators.http import require_POST
+from .models import Person, Reaction
+from .forms import ProfileForm
 import qrcode
 from io import BytesIO
 import uuid
+import random
 
 def profile_detail(request, pk):
     person = get_object_or_404(Person, pk=pk)
     viewer_auth_token = request.session.get('auth_token')
-    
+
     viewer = None
     if viewer_auth_token:
         try:
@@ -21,8 +22,17 @@ def profile_detail(request, pk):
             request.session.pop('auth_token', None)
 
     show_claim_button = (not person.is_authenticated) and (viewer is None)
-
     is_already_scanned = False
+
+    # [수정] 3T1L 문장들을 랜덤하게 섞어서 전달
+    sentences = []
+    if person.truth1 and person.truth2 and person.truth3 and person.lie:
+        sentences = [
+            (1, person.truth1), (2, person.truth2), 
+            (3, person.truth3), (4, person.lie)
+        ]
+        random.shuffle(sentences)
+
     if viewer and person != viewer:
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
 
@@ -31,9 +41,54 @@ def profile_detail(request, pk):
         'viewer': viewer,
         'show_claim_button': show_claim_button,
         'is_already_scanned': is_already_scanned,
+        'sentences': sentences,
     }
     return render(request, 'profiles/profile_detail.html', context)
 
+# --- [새로운 기능] 3T1L 게임 플레이를 처리하는 뷰 ---
+@require_POST
+def play_3t1l(request, pk):
+    receiver = get_object_or_404(Person, pk=pk)
+    viewer_auth_token = request.session.get('auth_token')
+
+    if not viewer_auth_token:
+        return JsonResponse({'status': 'error', 'message': '인증 정보가 없습니다.'}, status=401)
+
+    try:
+        viewer = Person.objects.get(auth_token=viewer_auth_token)
+    except Person.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '유효하지 않은 사용자입니다.'}, status=401)
+
+    action = request.POST.get('action')
+
+    if action == 'reveal_answer':
+        # 정답(거짓말 문장)을 알려줍니다.
+        return JsonResponse({'status': 'success', 'lie_sentence': receiver.lie})
+
+    elif action == 'send_emoji':
+        emoji_type = request.POST.get('emoji_type')
+
+        # 이미 해당 이모티콘으로 반응했는지 확인
+        if Reaction.objects.filter(reactor=viewer, receiver=receiver, emoji_type=emoji_type).exists():
+            return JsonResponse({'status': 'info', 'message': '이미 보낸 이모티콘입니다.'})
+
+        # 반응 기록 생성
+        Reaction.objects.create(reactor=viewer, receiver=receiver, emoji_type=emoji_type)
+
+        # 참가자의 이모티콘 카운트 증가
+        if emoji_type == 'laughed':
+            receiver.emoji_laughed_count += 1
+        elif emoji_type == 'touched':
+            receiver.emoji_touched_count += 1
+        elif emoji_type == 'tmi':
+            receiver.emoji_tmi_count += 1
+        elif emoji_type == 'wow':
+            receiver.emoji_wow_count += 1
+        receiver.save()
+
+        return JsonResponse({'status': 'success', 'message': '이모티콘을 보냈습니다!'})
+
+    return JsonResponse({'status': 'error', 'message': '알 수 없는 요청입니다.'}, status=400)
 def profile_edit(request, pk):
     person = get_object_or_404(Person, pk=pk)
     

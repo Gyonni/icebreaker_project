@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -6,13 +7,26 @@
     <title>{{ person.name }}님의 프로필</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Noto Sans KR', sans-serif; } </style>
+    <style> 
+        body { font-family: 'Noto Sans KR', sans-serif; } 
+        .emoji-btn {
+            background-color: #f3f4f6; color: #374151;
+            padding: 0.75rem 1rem; border-radius: 0.5rem;
+            font-weight: 600; transition: all 0.2s;
+            border: 1px solid #d1d5db;
+        }
+        .emoji-btn:hover { background-color: #e5e7eb; }
+        .emoji-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto max-w-lg p-4">
         <div id="profile-card" class="w-full bg-white rounded-xl shadow-lg p-8">
-            
-            <!-- 프로필 헤더: 이미지와 이름 -->
+
+            <!-- CSRF 토큰 (JavaScript에서 사용) -->
+            {% csrf_token %}
+
+            <!-- 프로필 헤더 -->
             <div class="flex flex-col items-center">
                 {% if person.profile_image %}
                     <img src="{{ person.profile_image.url }}" alt="{{ person.name }}의 프로필 사진" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
@@ -41,50 +55,59 @@
             </div>
             {% endif %}
 
-            <!-- 버튼 컨테이너 -->
-            <div class="mt-8">
+            <!-- 메인 버튼 컨테이너 -->
+            <div class="mt-8 space-y-4">
                 {% if show_claim_button %}
-                    <!-- Case 1: 이 프로필은 주인이 없고, 내 브라우저도 등록되지 않음 -->
                     <form action="{% url 'profiles:claim_profile' person.id %}" method="post">
                         {% csrf_token %}
-                        <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-green-600 hover:bg-green-700">
-                            이 프로필을 내 것으로 만들기
-                        </button>
+                        <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-green-600 hover:bg-green-700">이 프로필을 내 것으로 만들기</button>
                     </form>
-
                 {% elif viewer %}
                     {% if viewer.id == person.id %}
-                        <!-- Case 2: 내 프로필을 보고 있음 -->
-                        <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">
-                            다른 사람 QR 스캔하기
-                        </button>
-                        <a href="{% url 'profiles:profile_edit' person.id %}" class="mt-4 w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">
-                            ✏️ 내 프로필 수정하기
-                        </a>
+                        <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">다른 사람 QR 스캔하기</button>
+                        <a href="{% url 'profiles:profile_edit' person.id %}" class="w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">✏️ 내 프로필 수정하기</a>
                     {% else %}
-                        <!-- Case 3: 다른 사람의 프로필을 보고 있음 -->
                         {% if is_already_scanned %}
-                            <!-- [수정] 이미 만난 사람일 경우 -->
-                            <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">
-                                ✅ 이미 만난 사람입니다
-                            </button>
+                            <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">✅ 이미 만난 사람입니다</button>
                         {% else %}
-                            <!-- 아직 만나지 않은 사람일 경우 -->
                             <form action="{% url 'profiles:add_scanned_person' person.id %}" method="post">
                                 {% csrf_token %}
-                                <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700">
-                                    👋 '{{ person.name }}'님 만났습니다! 목록에 추가
-                                </button>
+                                <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-blue-600 hover:bg-blue-700">👋 '{{ person.name }}'님 만났습니다! 목록에 추가</button>
                             </form>
                         {% endif %}
                     {% endif %}
                 {% else %}
-                     <!-- Case 4: 나는 등록되지 않았지만, 이미 주인이 있는 프로필을 봄 -->
-                     <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
-                        자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.
-                     </div>
+                     <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.</div>
                 {% endif %}
             </div>
+
+            <!-- 3T1L 게임 섹션 -->
+            {% if viewer and viewer.id != person.id and sentences %}
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800 text-center mb-4">🎲 3 Truths 1 Lie 게임</h2>
+                <div id="game-container" class="text-center">
+                    <button id="show-3t1l-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-gray-700 hover:bg-gray-800">🤫 3 Truths 1 Lie 보기</button>
+                    <div id="sentences-container" class="hidden space-y-3 text-left mt-4">
+                        {% for number, sentence in sentences %}
+                        <div class="bg-gray-100 p-3 rounded-lg" data-sentence="{{ sentence }}">
+                            <span class="font-bold text-purple-600 mr-2">{{ forloop.counter }}.</span>
+                            <span>{{ sentence }}</span>
+                        </div>
+                        {% endfor %}
+                        <button id="reveal-answer-btn" class="mt-4 w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-red-600 hover:bg-red-700">🙌 대화를 완료했어요!</button>
+                    </div>
+                    <div id="emoji-container" class="hidden mt-4">
+                        <p class="font-semibold mb-3">대화 후의 감상을 이모티콘으로 선물하세요!</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button data-emoji="laughed" class="emoji-btn">😂 완전 속았네!</button>
+                            <button data-emoji="touched" class="emoji-btn">😭 감동적인 이야기</button>
+                            <button data-emoji="tmi" class="emoji-btn">👍 최고의 TMI</button>
+                            <button data-emoji="wow" class="emoji-btn">🤯 대박이에요!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- 만난 사람들 목록 -->
             <div class="mt-8">
@@ -113,55 +136,110 @@
         <button id="close-scan-btn" class="mt-4 bg-white text-black font-bold py-2 px-6 rounded-lg">닫기</button>
     </div>
 
-    <!-- 스크립트 -->
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const scanButton = document.getElementById('start-scan-btn');
+    document.addEventListener('DOMContentLoaded', function() {
+        const scanButton = document.getElementById('start-scan-btn');
+        if (scanButton) {
             const scannerContainer = document.getElementById('scanner-container');
             const closeScanBtn = document.getElementById('close-scan-btn');
-
-            if (scanButton) {
-                const html5QrCode = new Html5Qrcode("reader");
-                scanButton.addEventListener('click', () => {
-                    scannerContainer.style.display = 'flex';
-                    startScanner();
-                });
-                closeScanBtn.addEventListener('click', () => stopScanner());
-
-                function startScanner() {
-                    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {})
-                        .catch(err => alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요."));
-                }
-                function stopScanner() {
-                    html5QrCode.stop().then(() => scannerContainer.style.display = 'none')
-                        .catch(err => {
-                            console.error("스캐너 중지 실패", err);
-                            scannerContainer.style.display = 'none';
-                        });
-                }
-                function onScanSuccess(decodedText, decodedResult) {
-                    stopScanner();
-                    try {
-                        new URL(decodedText);
-                        window.location.href = decodedText;
-                    } catch (error) {
-                        alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
-                    }
+            const html5QrCode = new Html5Qrcode("reader");
+            scanButton.addEventListener('click', () => {
+                scannerContainer.style.display = 'flex';
+                startScanner();
+            });
+            closeScanBtn.addEventListener('click', () => stopScanner());
+            function startScanner() {
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {})
+                    .catch(err => alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요."));
+            }
+            function stopScanner() {
+                html5QrCode.stop().then(() => scannerContainer.style.display = 'none')
+                    .catch(err => {
+                        console.error("스캐너 중지 실패", err);
+                        scannerContainer.style.display = 'none';
+                    });
+            }
+            function onScanSuccess(decodedText, decodedResult) {
+                stopScanner();
+                try {
+                    new URL(decodedText);
+                    window.location.href = decodedText;
+                } catch (error) {
+                    alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
                 }
             }
+        }
 
-            // Django 메시지를 alert로 표시하기 위한 스크립트
-            {% if messages %}
-                let message_data = [];
-                {% for message in messages %}
-                    message_data.push("{{ message }}");
-                {% endfor %}
-                if (message_data.length > 0) {
-                    alert(message_data.join("\n"));
+        const gameContainer = document.getElementById('game-container');
+        if (gameContainer) {
+            const showBtn = document.getElementById('show-3t1l-btn');
+            const sentencesContainer = document.getElementById('sentences-container');
+            const revealBtn = document.getElementById('reveal-answer-btn');
+            const emojiContainer = document.getElementById('emoji-container');
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            showBtn.addEventListener('click', () => {
+                showBtn.style.display = 'none';
+                sentencesContainer.style.display = 'block';
+            });
+
+            revealBtn.addEventListener('click', async () => {
+                const formData = new FormData();
+                formData.append('action', 'reveal_answer');
+
+                const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.querySelectorAll('[data-sentence]').forEach(el => {
+                        if (el.dataset.sentence === data.lie_sentence) {
+                            el.classList.add('bg-red-200', 'text-red-800');
+                        }
+                    });
+                    revealBtn.style.display = 'none';
+                    emojiContainer.style.display = 'block';
+                } else {
+                    alert(data.message);
                 }
-            {% endif %}
-        });
+            });
+
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true; // 중복 클릭 방지
+                    const emojiType = btn.dataset.emoji;
+                    const formData = new FormData();
+                    formData.append('action', 'send_emoji');
+                    formData.append('emoji_type', emojiType);
+
+                    const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    alert(data.message);
+                    document.querySelectorAll('.emoji-btn').forEach(b => b.disabled = true);
+                    btn.classList.add('ring-4', 'ring-yellow-400');
+                });
+            });
+        }
+
+        {% if messages %}
+            let message_data = [];
+            {% for message in messages %}
+                message_data.push("{{ message }}");
+            {% endfor %}
+            if (message_data.length > 0) {
+                alert(message_data.join("\n"));
+            }
+        {% endif %}
+    });
     </script>
 </body>
 </html>
