@@ -23,27 +23,23 @@ def profile_detail(request, pk):
             request.session.pop('auth_token', None)
 
     show_claim_button = (not person.is_authenticated) and (viewer is None)
-    is_already_scanned = False
 
-    # [수정] 3T1L 문장들을 랜덤하게 섞어서 전달
     sentences = []
-    lie_content = ""
-    if person.lie_answer:
-        all_sentences = [person.sentence1, person.sentence2, person.sentence3, person.sentence4]
-        # 사용자가 선택한 정답 번호에 해당하는 문장을 lie_content로 지정
-        lie_content = all_sentences[person.lie_answer - 1]
-
-        # 화면에 보여줄 문장 목록 생성 (순서는 항상 1,2,3,4)
+    if person.sentence1 and person.sentence2 and person.sentence3 and person.sentence4 and person.lie_answer:
         sentences = [
             (1, person.sentence1), (2, person.sentence2),
             (3, person.sentence3), (4, person.sentence4)
         ]
 
+    is_already_scanned = False
+    has_reacted = False
     if viewer and person != viewer:
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
-        
+        has_reacted = Reaction.objects.filter(reactor=viewer, receiver=person).exists()
+
+    # [핵심] 게임 활성화 상태를 데이터베이스에서 가져옵니다.
     game_status, created = GameStatus.objects.get_or_create(pk=1)
-    
+
     context = {
         'person': person,
         'viewer': viewer,
@@ -51,6 +47,9 @@ def profile_detail(request, pk):
         'is_already_scanned': is_already_scanned,
         'sentences': sentences,
         'lie_answer_number': person.lie_answer,
+        'has_reacted': has_reacted,
+        'is_3t1l_active': game_status.is_3t1l_active,
+        'is_bingo_active': game_status.is_bingo_active,
     }
     return render(request, 'profiles/profile_detail.html', context)
 
