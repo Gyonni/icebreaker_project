@@ -38,14 +38,29 @@
                 <h1 class="text-3xl font-bold text-gray-800">{{ person.name }}</h1>
                 <p class="text-gray-500 mt-1">{{ person.group }} / {{ person.team }}</p>
             </div>
-
-            <!-- 자기소개 -->
-            {% if person.bio %}
-            <div class="mt-8 text-center">
-                <h2 class="text-lg font-semibold text-gray-700">자기소개</h2>
-                <p class="mt-2 text-gray-600">{{ person.bio|linebreaksbr }}</p>
+            
+            <!-- [수정] 자기소개 섹션을 접이식 문답 형태로 변경 -->
+            <div class="mt-8 w-full">
+                <details class="group">
+                    <summary class="flex justify-between items-center font-medium cursor-pointer list-none bg-gray-50 p-4 rounded-lg hover:bg-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-700">자기소개 보기</h2>
+                        <span class="transition group-open:rotate-180">
+                            <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                        </span>
+                    </summary>
+                    <div class="mt-4 space-y-4 text-left text-gray-600">
+                        <p>🎵 요즘 가장 즐겨듣는 찬양은 <b class="text-purple-600">{{ person.bio_q1_answer|default:"(비어있음)" }}</b> 입니다.</p>
+                        <p>🤔 저의 MBTI는 <b class="text-purple-600">{{ person.bio_q2_answer|default:"(비어있음)" }}</b> 입니다.</p>
+                        <p>🙏 이번 수련회에서 <b class="text-purple-600">{{ person.bio_q3_answer|default:"(비어있음)" }}</b> 은혜를 받고 싶어요.</p>
+                        {% if person.prayer_request %}
+                        <div class="mt-4 pt-4 border-t">
+                            <p class="font-semibold">🙌 저를 위해 기도해주세요!</p>
+                            <p class="mt-1">{{ person.prayer_request|linebreaksbr }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </details>
             </div>
-            {% endif %}
 
             <!-- Fun Fact -->
             {% if person.fun_fact %}

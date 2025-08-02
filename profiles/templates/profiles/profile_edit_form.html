@@ -41,10 +41,6 @@
                     {{ form.name }}
                 </div>
                 <div class="form-group">
-                    <label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>
-                    {{ form.bio }}
-                </div>
-                <div class="form-group">
                     <label for="{{ form.fun_fact.id_for_label }}">{{ form.fun_fact.label }}</label>
                     {{ form.fun_fact }}
                 </div>
@@ -54,6 +50,27 @@
                 </div>
             </div>
 
+            <!-- 자기소개 및 기도제목 섹션 -->
+            <div class="form-section">
+                <h2>자기소개 (Q&A)</h2>
+                <div class="form-group">
+                    <label>요즘 가장 즐겨듣는 찬양은 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 입니다.</label>
+                    {{ form.bio_q1_answer }}
+                </div>
+                <div class="form-group">
+                    <label>저의 MBTI는 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 입니다.</label>
+                    {{ form.bio_q2_answer }}
+                </div>
+                <div class="form-group">
+                    <label>이번 수련회에서 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 은혜를 받고 싶어요.</label>
+                    {{ form.bio_q3_answer }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.prayer_request.id_for_label }}">저를 위해 기도해주세요!</label>
+                    {{ form.prayer_request }}
+                </div>
+            </div>
+            
             <!-- 3T1L 게임 정보 섹션 (새로 추가) -->
             <div class="form-section">
                 <h2>3 Truths 1 Lie 게임 정보</h2>
