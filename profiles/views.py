@@ -178,26 +178,34 @@ def bingo_board(request):
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
 
+        # 빙고판이 저장된게 없다면 새로 생성
         if not viewer.bingo_board_layout:
-            # [수정] UUID를 문자열(str)로 변환하여 저장합니다.
             scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
-            random.shuffle(scanned_people_ids)
-            viewer.bingo_board_layout = scanned_people_ids
+            board_size = 16
+
+            # 16칸짜리 리스트를 만듭니다.
+            full_board_items = scanned_people_ids[:board_size]
+            while len(full_board_items) < board_size:
+                full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
+
+            # [핵심 수정] 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
+            random.shuffle(full_board_items)
+
+            viewer.bingo_board_layout = full_board_items
             viewer.save()
 
-        board_ids = viewer.bingo_board_layout
-        board_people = {str(p.id): p for p in Person.objects.filter(id__in=board_ids)}
-        board_items = [board_people.get(pid) for pid in board_ids]
+        # 저장된 순서대로 사람 객체를 불러옵니다.
+        board_ids_with_none = viewer.bingo_board_layout
+        board_ids = [pid for pid in board_ids_with_none if pid is not None]
 
-        board_size = 16
-        while len(board_items) < board_size:
-            board_items.append(None)
+        board_people = {str(p.id): p for p in Person.objects.filter(id__in=board_ids)}
+        board_items = [board_people.get(pid) if pid is not None else None for pid in board_ids_with_none]
 
         game_status, _ = GameStatus.objects.get_or_create(pk=1)
 
         context = {
             'viewer': viewer,
-            'board_items': board_items[:board_size],
+            'board_items': board_items,
             'can_shuffle': game_status.can_shuffle_bingo,
         }
         return render(request, 'profiles/bingo_board.html', context)
@@ -250,19 +258,20 @@ def shuffle_bingo_board(request):
     if viewer_auth_token:
         viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
 
-        # [핵심 수정] 현재 저장된 빙고판 순서를 가져와서 다시 섞습니다.
-        # 이렇게 해야 매번 다른 결과를 보장할 수 있습니다.
-        current_layout = viewer.bingo_board_layout
+        # [핵심 수정] 수집한 사람 목록과 빈 칸을 합쳐서 16칸짜리 전체 판을 만듭니다.
+        scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
+        board_size = 16
 
-        # 만약 저장된 레이아웃이 없다면, 새로 생성합니다.
-        if not current_layout:
-            current_layout = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
+        full_board_items = scanned_people_ids[:board_size]
+        while len(full_board_items) < board_size:
+            full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
 
-        random.shuffle(current_layout)
-        viewer.bingo_board_layout = current_layout
+        # 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
+        random.shuffle(full_board_items)
+
+        viewer.bingo_board_layout = full_board_items
         viewer.save()
 
-        # [개선] 사용자에게 피드백 메시지를 보냅니다.
         messages.success(request, "빙고판을 새로 만들었습니다!")
 
     return redirect('profiles:bingo_board')
