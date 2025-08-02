@@ -17,5 +17,6 @@ urlpatterns = [
     path('moderator/random-picker/', views.random_profile_picker, name='random_picker'),
     # 사회자 페이지에서 다음 사람을 뽑기 위한 API 주소
     path('api/get-random-profile/', views.get_random_profile_data, name='get_random_profile_data'),
+    path('moderator/reset-picks/', views.reset_all_picks, name='reset_all_picks'),
 ]
 

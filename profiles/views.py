@@ -207,13 +207,18 @@ def random_profile_picker(request):
     return render(request, 'profiles/random_picker.html')
 
 def get_random_profile_data(request):
-    # 전체 참가자 목록에서 한 명을 무작위로 선택합니다.
-    all_people = Person.objects.all()
-    if not all_people:
-        return JsonResponse({'error': 'No participants found'}, status=404)
+    # [수정] 아직 뽑히지 않은 사람들만 대상으로 합니다.
+    unpicked_people = Person.objects.filter(was_picked=False)
 
-    random_person = random.choice(all_people)
+    if not unpicked_people:
+        # 더 이상 뽑을 사람이 없을 경우
+        return JsonResponse({'status': 'finished', 'message': '모든 참가자를 뽑았습니다!'})
 
+    random_person = random.choice(unpicked_people)
+
+    # 뽑힌 사람의 상태를 True로 변경하여 저장합니다.
+    random_person.was_picked = True
+    random_person.save()
     # JSON으로 전달할 데이터를 구성합니다.
     data = {
         'id': random_person.id,
@@ -225,3 +230,10 @@ def get_random_profile_data(request):
         'fun_fact': random_person.fun_fact,
     }
     return JsonResponse(data)
+
+# --- [새로운 기능] 모든 참가자의 뽑기 상태를 초기화하는 뷰 ---
+@require_POST
+def reset_all_picks(request):
+    # 모든 사람의 was_picked 상태를 False로 되돌립니다.
+    updated_count = Person.objects.update(was_picked=False)
+    return JsonResponse({'status': 'success', 'message': f'{updated_count}명의 뽑기 상태를 초기화했습니다.'})
