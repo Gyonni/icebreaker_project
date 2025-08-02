@@ -219,12 +219,7 @@ def get_random_profile_data(request):
         'group': random_person.group,
         'team': random_person.team,
         'profile_image_url': random_person.profile_image.url if random_person.profile_image else None,
-        'sentences': [
-            random_person.sentence1,
-            random_person.sentence2,
-            random_person.sentence3,
-            random_person.sentence4,
-        ],
-        'lie_answer_number': random_person.lie_answer,
+        'bio': random_person.bio,
+        'fun_fact': random_person.fun_fact,
     }
     return JsonResponse(data)

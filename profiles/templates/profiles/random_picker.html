@@ -27,18 +27,25 @@
                 const response = await fetch("{% url 'profiles:get_random_profile_data' %}");
                 const person = await response.json();
 
-                let sentencesHtml = person.sentences.map((sentence, index) => {
-                    const isLie = (index + 1) === person.lie_answer_number;
-                    const bgColor = isLie ? 'bg-red-100' : 'bg-gray-100';
-                    const textColor = isLie ? 'text-red-800' : 'text-gray-700';
-                    return `<div class="${bgColor} ${textColor} p-3 rounded-lg text-left"><span class="font-bold mr-2">${index + 1}.</span>${sentence}</div>`;
-                }).join('');
+                // [수정] 자기소개와 TMI를 표시하는 HTML을 생성합니다.
+                let bioHtml = person.bio ? `
+                    <div class="mt-6 text-left">
+                        <h2 class="text-lg font-semibold text-gray-700">자기소개</h2>
+                        <p class="mt-2 text-gray-600">${person.bio.replace(/\n/g, '<br>')}</p>
+                    </div>` : '';
+
+                let funFactHtml = person.fun_fact ? `
+                    <div class="mt-6 text-left bg-purple-50 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2>
+                        <p class="mt-2 text-purple-800">${person.fun_fact}</p>
+                    </div>` : '';
 
                 display.innerHTML = `
                     <img src="${person.profile_image_url || 'https://placehold.co/150x150/EFEFEF/AAAAAA?text=No+Image'}" class="w-32 h-32 rounded-full object-cover mx-auto border-4 border-white shadow-md mb-4">
                     <h1 class="text-4xl font-bold">${person.name}</h1>
                     <p class="text-gray-500 mt-1 text-lg">${person.group} / ${person.team}</p>
-                    <div class="mt-6 space-y-2">${sentencesHtml}</div>
+                    ${bioHtml}
+                    ${funFactHtml}
                 `;
                 display.classList.remove('opacity-0');
             } catch (error) {
@@ -50,8 +57,7 @@
             }
         }
         drawBtn.addEventListener('click', drawNextPerson);
-        // 페이지 로드 시 첫 번째 사람을 바로 뽑습니다.
-        drawNextPerson();
+        drawNextPerson(); // 페이지 로드 시 첫 번째 사람을 바로 뽑습니다.
     </script>
 </body>
 </html>

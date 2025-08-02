@@ -114,26 +114,36 @@
             </div>
             {% endif %}
 
-            <!-- 만난 사람들 목록 -->
+            <!-- [수정] 만난 사람들 목록을 접이식(details/summary)으로 변경 -->
             <div class="mt-8">
-                <h2 class="text-xl font-bold text-gray-800 text-center mb-4">{{ person.name }}님이 만난 사람들 ({{ person.scanned_people.count }}명)</h2>
-                <div id="scanned-list" class="space-y-2">
-                    {% for scanned_person in person.scanned_people.all %}
-                        <a href="{% url 'profiles:profile_detail' scanned_person.pk %}" class="bg-gray-100 p-3 rounded-lg flex items-center hover:bg-gray-200">
-                            {% if scanned_person.profile_image %}
-                                <img src="{{ scanned_person.profile_image.url }}" alt="{{ scanned_person.name }}'s profile picture" class="w-8 h-8 rounded-full object-cover mr-3">
-                            {% else %}
-                                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3"><span class="font-bold text-gray-600">{{ scanned_person.name|first }}</span></div>
-                            {% endif %}
-                            <span class="text-gray-700">{{ scanned_person.name }}</span>
-                        </a>
-                    {% empty %}
-                        <p id="empty-list-msg" class="text-center text-gray-500">아직 만난 사람이 없어요!</p>
-                    {% endfor %}
-                </div>
+                <details class="group">
+                    <summary class="flex justify-between items-center font-medium cursor-pointer list-none bg-gray-50 p-4 rounded-lg hover:bg-gray-100">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            {{ person.name }}님이 만난 사람들 ({{ person.scanned_people.count }}명)
+                        </h2>
+                        <span class="transition group-open:rotate-180">
+                            <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                        </span>
+                    </summary>
+                    <div id="scanned-list" class="mt-4 space-y-2">
+                        {% for scanned_person in person.scanned_people.all %}
+                            <a href="{% url 'profiles:profile_detail' scanned_person.pk %}" class="bg-gray-100 p-3 rounded-lg flex items-center hover:bg-gray-200">
+                                {% if scanned_person.profile_image %}
+                                    <img src="{{ scanned_person.profile_image.url }}" alt="{{ scanned_person.name }}'s profile picture" class="w-8 h-8 rounded-full object-cover mr-3">
+                                {% else %}
+                                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3"><span class="font-bold text-gray-600">{{ scanned_person.name|first }}</span></div>
+                                {% endif %}
+                                <span class="text-gray-700">{{ scanned_person.name }}</span>
+                            </a>
+                        {% empty %}
+                            <p id="empty-list-msg" class="text-center text-gray-500">아직 만난 사람이 없어요!</p>
+                        {% endfor %}
+                    </div>
+                </details>
             </div>
         </div>
     </div>
+
 
     <!-- 스캐너 모달 -->
     <div id="scanner-container" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 hidden">
