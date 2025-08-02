@@ -66,6 +66,7 @@
                     {% if viewer.id == person.id %}
                         <button id="start-scan-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-purple-600 hover:bg-purple-700">다른 사람 QR 스캔하기</button>
                         <a href="{% url 'profiles:profile_edit' person.id %}" class="w-full text-center block bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors">✏️ 내 프로필 수정하기</a>
+                        {% if is_bingo_active %}
                         <a href="{% url 'profiles:bingo_board' %}" class="w-full text-center block bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-300 transition-colors">🎲 나의 빙고판 보기</a>
                         {% else %}
                         {% if is_already_scanned %}
@@ -84,6 +85,7 @@
 
             <!-- 3T1L 게임 섹션 -->
             {% if viewer and viewer.id != person.id and sentences %}
+            {% if is_3t1l_active and viewer and viewer.id != person.id and sentences %}
             <div class="mt-8 pt-8 border-t border-gray-200">
                 <h2 class="text-xl font-bold text-gray-800 text-center mb-4">🎲 3 Truths 1 Lie 게임</h2>
                 <div id="game-container" class="text-center">

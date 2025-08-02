@@ -9,6 +9,7 @@ import qrcode
 from io import BytesIO
 import uuid
 import random
+from config.models import GameStatus
 
 def profile_detail(request, pk):
     person = get_object_or_404(Person, pk=pk)
@@ -40,7 +41,9 @@ def profile_detail(request, pk):
 
     if viewer and person != viewer:
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
-
+        
+    game_status, created = GameStatus.objects.get_or_create(pk=1)
+    
     context = {
         'person': person,
         'viewer': viewer,
