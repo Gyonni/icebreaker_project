@@ -1,0 +1,65 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나의 빙고판</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 max-w-xl">
+        <header class="text-center my-8">
+            <h1 class="text-3xl font-bold text-purple-700">{{ viewer.name }}님의 빙고판</h1>
+            <p class="text-gray-600 mt-2">사회자가 호명하는 이름을 찾아 체크하세요!</p>
+        </header>
+        <main class="grid grid-cols-4 gap-2 aspect-square">
+            {% for item in board_items %}
+            <div class="bingo-cell bg-white border-2 border-purple-200 rounded-lg flex items-center justify-center text-center p-2 cursor-pointer transition-colors duration-300 hover:bg-purple-100" 
+                 data-person-id="{{ item.id|default_if_none:'' }}">
+                <span class="font-semibold text-gray-800">
+                    {% if item %}{{ item.name }}{% else %}&nbsp;{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </main>
+        <footer class="text-center my-8 space-y-4">
+            {% if can_shuffle %}
+            <form action="{% url 'profiles:shuffle_bingo_board' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700">빙고판 다시 만들기</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'profiles:profile_detail' viewer.id %}" class="bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 inline-block">내 프로필로 돌아가기</a>
+        </footer>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewerId = "{{ viewer.id }}";
+            const storageKey = `bingoChecks_${viewerId}`;
+            let checkedIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+            const cells = document.querySelectorAll('.bingo-cell');
+
+            cells.forEach(cell => {
+                const personId = cell.dataset.personId;
+                if (personId && checkedIds.includes(personId)) {
+                    cell.classList.add('bg-yellow-300');
+                }
+
+                cell.addEventListener('click', () => {
+                    if (!personId) return;
+                    cell.classList.toggle('bg-yellow-300');
+
+                    if (cell.classList.contains('bg-yellow-300')) {
+                        if (!checkedIds.includes(personId)) checkedIds.push(personId);
+                    } else {
+                        checkedIds = checkedIds.filter(id => id !== personId);
+                    }
+                    localStorage.setItem(storageKey, JSON.stringify(checkedIds));
+                });
+            });
+        });
+    </script>
+</body>
+</html>

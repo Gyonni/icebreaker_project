@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사회자용 랜덤 뽑기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Noto Sans KR', sans-serif; } 
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
+    <header class="w-full text-center p-4 bg-white shadow-md z-10">
+        <h1 class="text-2xl font-bold text-purple-700">사회자용 랜덤 뽑기</h1>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 overflow-auto">
+        <div id="profile-display" class="w-full max-w-md bg-white text-gray-800 rounded-xl shadow-lg p-8 transition-opacity duration-500 opacity-0 min-h-[500px] flex flex-col items-center justify-center">
+            <!-- 프로필 내용이 여기에 동적으로 채워집니다 -->
+            <p class="text-gray-500">아래 버튼을 눌러 첫 번째 참가자를 뽑아주세요.</p>
+        </div>
+    </main>
+
+    <footer class="w-full p-4 bg-white/80 backdrop-blur-sm shadow-inner z-10">
+        <div class="flex space-x-4 max-w-md mx-auto">
+            <button id="draw-btn" class="flex-grow bg-yellow-400 text-gray-900 font-bold text-xl py-4 px-8 rounded-lg shadow-lg hover:bg-yellow-300 transition-transform duration-200 hover:scale-105">
+                다음 사람 뽑기!
+            </button>
+            <button id="reset-btn" class="bg-red-600 text-white font-bold text-lg py-4 px-6 rounded-lg shadow-lg hover:bg-red-500 transition-colors">
+                초기화
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const display = document.getElementById('profile-display');
+        const drawBtn = document.getElementById('draw-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        // CSRF 토큰은 form을 사용하지 않으므로, Django 템플릿 변수로 직접 가져옵니다.
+        const csrfToken = "{{ csrf_token }}"; 
+
+        async function drawNextPerson() {
+            display.classList.add('opacity-0');
+            drawBtn.disabled = true;
+            drawBtn.textContent = '뽑는 중...';
+
+            try {
+                const response = await fetch("{% url 'profiles:get_random_profile_data' %}");
+                const result = await response.json();
+
+                if (result.status === 'finished') {
+                    display.innerHTML = `<h1 class="text-3xl font-bold text-green-600">${result.message}</h1>`;
+                    drawBtn.style.display = 'none'; // 더 이상 뽑을 수 없으므로 버튼 숨김
+                } else {
+                    let bioHtml = result.bio ? `<div class="mt-6 w-full text-left"><h2 class="text-lg font-semibold text-gray-700">자기소개</h2><p class="mt-2 text-gray-600">${result.bio.replace(/\n/g, '<br>')}</p></div>` : '';
+                    let funFactHtml = result.fun_fact ? `<div class="mt-6 w-full text-left bg-purple-50 p-4 rounded-lg"><h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2><p class="mt-2 text-purple-800">${result.fun_fact}</p></div>` : '';
+
+                    display.innerHTML = `
+                        <div class="flex flex-col items-center w-full">
+                            <img src="${result.profile_image_url || 'https://placehold.co/150x150/EFEFEF/AAAAAA?text=No+Image'}" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
+                            <h1 class="text-4xl font-bold">${result.name}</h1>
+                            <p class="text-gray-500 mt-1 text-lg">${result.group} / ${result.team}</p>
+                            ${bioHtml}
+                            ${funFactHtml}
+                        </div>
+                    `;
+                }
+                display.classList.remove('opacity-0');
+            } catch (error) {
+                display.innerHTML = '<p class="text-red-500">오류가 발생했습니다. 다시 시도해주세요.</p>';
+                display.classList.remove('opacity-0');
+            } finally {
+                drawBtn.disabled = false;
+                drawBtn.textContent = '다음 사람 뽑기!';
+            }
+        }
+
+        async function resetPicks() {
+            if (!confirm('정말로 모든 참가자의 뽑기 상태를 초기화하시겠습니까?')) {
+                return;
+            }
+            try {
+                const response = await fetch("{% url 'profiles:reset_all_picks' %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const result = await response.json();
+                alert(result.message);
+                drawBtn.style.display = 'inline-block'; // 뽑기 버튼 다시 보이기
+                drawNextPerson(); // 초기화 후 첫 사람 뽑기
+            } catch (error) {
+                alert('초기화 중 오류가 발생했습니다.');
+            }
+        }
+
+        drawBtn.addEventListener('click', drawNextPerson);
+        resetBtn.addEventListener('click', resetPicks);
+        // 페이지 로드 시 바로 뽑지 않고, 버튼을 누르면 시작하도록 변경
+        // drawNextPerson(); 
+    </script>
+</body>
+</html>

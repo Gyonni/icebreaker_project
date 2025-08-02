@@ -4,15 +4,19 @@
 {% block object-tools-items %}
     {{ block.super }}
     <li>
-        <!-- [수정] admin.py와 동일한 URL 이름 규칙으로 변경 -->
         <a href="{% url 'admin:profiles_person_import_excel' %}" class="addlink">
             엑셀로 일괄 등록하기
         </a>
     </li>
     <li>
-        <!-- [수정] admin.py와 동일한 URL 이름 규칙으로 변경 -->
         <a href="{% url 'admin:profiles_person_export_excel_all' %}" class="addlink" style="background-color: #28a745;">
             전체 명단 다운로드 (QR 포함)
+        </a>
+    </li>
+    <!-- [새로운 기능] 사회자용 랜덤 뽑기 페이지로 이동하는 버튼 추가 -->
+    <li>
+        <a href="{% url 'profiles:random_picker' %}" target="_blank" class="addlink" style="background-color: #ffc107; color: #212529;">
+            사회자용 랜덤 뽑기
         </a>
     </li>
 {% endblock %}

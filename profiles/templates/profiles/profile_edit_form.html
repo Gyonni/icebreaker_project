@@ -10,7 +10,7 @@
         h1 { text-align: center; color: #333; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        .form-group input[type="text"], .form-group textarea {
+        .form-group input[type="text"], .form-group textarea, .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -19,10 +19,12 @@
         }
         .form-group input[type="file"] { padding: 3px; }
         .button-container { text-align: center; margin-top: 20px; }
-        .btn { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; text-decoration: none; display: inline-block; box-sizing: border-box; }
         .btn:hover { background-color: #0056b3; }
         .btn-secondary { background-color: #6c757d; margin-top: 10px; }
         .btn-secondary:hover { background-color: #5a6268; }
+        .form-section { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .form-section h2 { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -30,25 +32,74 @@
         <h1>프로필 수정</h1>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-                {{ form.name }}
+
+            <!-- 기본 프로필 정보 섹션 -->
+            <div class="form-section">
+                <h2>기본 정보</h2>
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.fun_fact.id_for_label }}">{{ form.fun_fact.label }}</label>
+                    {{ form.fun_fact }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.profile_image.id_for_label }}">{{ form.profile_image.label }}</label>
+                    {{ form.profile_image }}
+                </div>
             </div>
-            <div class="form-group">
-                <label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>
-                {{ form.bio }}
+
+            <!-- 자기소개 및 기도제목 섹션 -->
+            <div class="form-section">
+                <h2>자기소개 (Q&A)</h2>
+                <div class="form-group">
+                    <label>요즘 가장 즐겨듣는 찬양은 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 입니다.</label>
+                    {{ form.bio_q1_answer }}
+                </div>
+                <div class="form-group">
+                    <label>저의 MBTI는 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 입니다.</label>
+                    {{ form.bio_q2_answer }}
+                </div>
+                <div class="form-group">
+                    <label>이번 수련회에서 <b class="text-purple-600">[ &nbsp; &nbsp; ]</b> 은혜를 받고 싶어요.</label>
+                    {{ form.bio_q3_answer }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.prayer_request.id_for_label }}">저를 위해 기도해주세요!</label>
+                    {{ form.prayer_request }}
+                </div>
             </div>
-            <div class="form-group">
-                <label for="{{ form.fun_fact.id_for_label }}">{{ form.fun_fact.label }}</label>
-                {{ form.fun_fact }}
+            
+            <!-- 3T1L 게임 정보 섹션 (새로 추가) -->
+            <div class="form-section">
+                <h2>3 Truths 1 Lie 게임 정보</h2>
+                <p>...</p>
+                <div class="form-group">
+                    <label for="{{ form.sentence1.id_for_label }}">{{ form.sentence1.label }}</label>
+                    {{ form.sentence1 }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.sentence2.id_for_label }}">{{ form.sentence2.label }}</label>
+                    {{ form.sentence2 }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.sentence3.id_for_label }}">{{ form.sentence3.label }}</label>
+                    {{ form.sentence3 }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.sentence4.id_for_label }}">{{ form.sentence4.label }}</label>
+                    {{ form.sentence4 }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.lie_answer.id_for_label }}">{{ form.lie_answer.label }}</label>
+                    {{ form.lie_answer }}
+                </div>
             </div>
-            <div class="form-group">
-                <label for="{{ form.profile_image.id_for_label }}">{{ form.profile_image.label }}</label>
-                {{ form.profile_image }}
-            </div>
+
             <div class="button-container">
                 <button type="submit" class="btn">저장하기</button>
-                <a href="{% url 'profiles:profile_detail' person.id %}" class="btn btn-secondary" style="display: block; text-decoration: none;">취소</a>
+                <a href="{% url 'profiles:profile_detail' person.id %}" class="btn btn-secondary">취소</a>
             </div>
         </form>
     </div>
