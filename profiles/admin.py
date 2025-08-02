@@ -65,7 +65,7 @@ class PersonAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'unique_code', 'group', 'team', 
         'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
-        'is_authenticated', 'scanned_count'
+        'is_authenticated', 'scanned_count', 'view_qr_code'
     )
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
@@ -122,6 +122,14 @@ class PersonAdmin(admin.ModelAdmin):
         return obj._scanned_count
     scanned_count.short_description = '만난 사람 수'
     scanned_count.admin_order_field = '_scanned_count'
+    
+    def view_qr_code(self, obj):
+        try:
+            url = reverse('profiles:generate_qr', args=[obj.id])
+            return format_html('<a href="{}" target="_blank">QR코드 보기</a>', url)
+        except Exception:
+            return "URL 확인 필요"
+    view_qr_code.short_description = "QR Code 생성"    
 
 @admin.register(Reaction)
 class ReactionAdmin(admin.ModelAdmin):
