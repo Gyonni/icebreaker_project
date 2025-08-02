@@ -16,7 +16,10 @@ class Person(models.Model):
     is_authenticated = models.BooleanField("인증여부", default=False)
     scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by')
     was_picked = models.BooleanField("사회자 뽑기 여부", default=False)
-
+    # --- [새로운 기능] 빙고판 순서를 저장하는 필드 ---
+    # JSONField는 파이썬 리스트나 딕셔너리를 그대로 저장할 수 있어 편리합니다.
+    bingo_board_layout = models.JSONField("빙고판 순서", default=list, blank=True)
+    
     # --- [핵심 수정] 3T1L 필드 이름 및 제목 변경 ---
     sentence1 = models.CharField("문장 1", max_length=255, blank=True)
     sentence2 = models.CharField("문장 2", max_length=255, blank=True)
