@@ -169,6 +169,21 @@ def add_scanned_person(request, pk):
         return redirect(scanned_person.get_absolute_url())
     return redirect('profiles:profile_detail', pk=pk)
 
+def _create_shuffled_bingo_layout(viewer):
+    """Helper function to create a new shuffled bingo board layout."""
+    scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
+    board_size = 16
+
+    # 16칸짜리 리스트를 만듭니다.
+    full_board_items = scanned_people_ids[:board_size]
+    while len(full_board_items) < board_size:
+        full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
+
+    # [핵심 수정] 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
+    random.shuffle(full_board_items)
+
+    return full_board_items
+
 def bingo_board(request):
     viewer_auth_token = request.session.get('auth_token')
     if not viewer_auth_token:
@@ -180,18 +195,7 @@ def bingo_board(request):
 
         # 빙고판이 저장된게 없다면 새로 생성
         if not viewer.bingo_board_layout:
-            scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
-            board_size = 16
-
-            # 16칸짜리 리스트를 만듭니다.
-            full_board_items = scanned_people_ids[:board_size]
-            while len(full_board_items) < board_size:
-                full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
-
-            # [핵심 수정] 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
-            random.shuffle(full_board_items)
-
-            viewer.bingo_board_layout = full_board_items
+            viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
             viewer.save()
 
         # 저장된 순서대로 사람 객체를 불러옵니다.
@@ -213,6 +217,7 @@ def bingo_board(request):
         request.session.pop('auth_token', None)
         messages.error(request, "사용자 정보를 찾을 수 없습니다.")
         return redirect('core:index')
+
 
 
 def random_profile_picker(request):
@@ -258,18 +263,8 @@ def shuffle_bingo_board(request):
     if viewer_auth_token:
         viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
 
-        # [핵심 수정] 수집한 사람 목록과 빈 칸을 합쳐서 16칸짜리 전체 판을 만듭니다.
-        scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
-        board_size = 16
-
-        full_board_items = scanned_people_ids[:board_size]
-        while len(full_board_items) < board_size:
-            full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
-
-        # 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
-        random.shuffle(full_board_items)
-
-        viewer.bingo_board_layout = full_board_items
+        # 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
+        viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
         viewer.save()
 
         messages.success(request, "빙고판을 새로 만들었습니다!")
