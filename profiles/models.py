@@ -20,6 +20,7 @@ class Person(models.Model):
     auth_token = models.UUIDField("인증 토큰", default=uuid.uuid4, editable=False, unique=True, null=True, blank=True)
     is_authenticated = models.BooleanField("인증여부", default=False)
     scanned_people = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='scanned_by')
+    # --- [새로운 기능] 사회자가 뽑았는지 여부를 기록하는 필드 ---
     was_picked = models.BooleanField("사회자 뽑기 여부", default=False)
     # --- [새로운 기능] 빙고판 순서를 저장하는 필드 ---
     # JSONField는 파이썬 리스트나 딕셔너리를 그대로 저장할 수 있어 편리합니다.
