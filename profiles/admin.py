@@ -60,6 +60,20 @@ def reset_scanned_people(modeladmin, request, queryset):
         person.scanned_people.clear()
     messages.success(request, f"{count}명의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
 
+# --- [새로운 기능] 선택된 참가자의 이모티콘 받은 개수 초기화 ---
+@admin.action(description='선택된 참가자의 이모티콘 받은 개수 초기화')
+def reset_emoji_counts(modeladmin, request, queryset):
+    # 이모티콘 카운트를 0으로 초기화합니다.
+    updated_count = queryset.update(
+        emoji_laughed_count=0,
+        emoji_touched_count=0,
+        emoji_tmi_count=0,
+        emoji_wow_count=0
+    )
+    # 게임을 다시 진행할 수 있도록, 기존 반응 기록도 함께 삭제합니다.
+    Reaction.objects.filter(receiver__in=queryset).delete()
+    messages.success(request, f"{updated_count}명의 이모티콘 받은 개수와 반응 기록을 초기화했습니다.")
+
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
@@ -70,7 +84,8 @@ class PersonAdmin(admin.ModelAdmin):
     )
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
-    actions = [reset_authentication, reset_scanned_people, export_as_excel]
+    # [수정] 새로운 이모티콘 초기화 액션을 추가합니다.
+    actions = [reset_authentication, reset_scanned_people, export_as_excel, reset_emoji_counts]
     change_list_template = "admin/profiles/person/change_list.html"
 
     def get_urls(self):
