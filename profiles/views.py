@@ -236,28 +236,28 @@ def random_profile_picker(request):
     return render(request, 'profiles/random_picker.html')
 
 def get_random_profile_data(request):
-    # [수정] 아직 뽑히지 않은 사람들만 대상으로 합니다.
     unpicked_people = Person.objects.filter(was_picked=False)
 
     if not unpicked_people:
-        # 더 이상 뽑을 사람이 없을 경우
         return JsonResponse({'status': 'finished', 'message': '모든 참가자를 뽑았습니다!'})
 
     random_person = random.choice(unpicked_people)
 
-    # 뽑힌 사람의 상태를 True로 변경하여 저장합니다.
     random_person.was_picked = True
     random_person.save()
-    # JSON으로 전달할 데이터를 구성합니다.
+
     data = {
         'status': 'success',
-        # ★★★ 핵심 수정: UUID를 문자열(str)로 변환하여 오류 해결 ★★★
         'id': str(random_person.id),
         'name': random_person.name,
         'group': random_person.group,
         'team': random_person.team,
         'profile_image_url': random_person.profile_image.url if random_person.profile_image else None,
-        'bio': random_person.bio,
+        # [핵심 수정] bio 대신 새로운 문답 필드들을 전달합니다.
+        'bio_q1_answer': random_person.bio_q1_answer,
+        'bio_q2_answer': random_person.bio_q2_answer,
+        'bio_q3_answer': random_person.bio_q3_answer,
+        'prayer_request': random_person.prayer_request,
         'fun_fact': random_person.fun_fact,
     }
     return JsonResponse(data)
@@ -265,7 +265,6 @@ def get_random_profile_data(request):
 # --- [새로운 기능] 모든 참가자의 뽑기 상태를 초기화하는 뷰 ---
 @require_POST
 def reset_all_picks(request):
-    # 모든 사람의 was_picked 상태를 False로 되돌립니다.
     updated_count = Person.objects.update(was_picked=False)
     return JsonResponse({'status': 'success', 'message': f'{updated_count}명의 뽑기 상태를 초기화했습니다.'})
 
