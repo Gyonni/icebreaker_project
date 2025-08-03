@@ -70,7 +70,6 @@ def play_3t1l(request, pk):
     action = request.POST.get('action')
 
     if action == 'reveal_answer':
-        # [수정] lie_answer를 기준으로 진짜 거짓말 문장을 찾아서 반환
         all_sentences = [receiver.sentence1, receiver.sentence2, receiver.sentence3, receiver.sentence4]
         lie_content = all_sentences[receiver.lie_answer - 1]
         return JsonResponse({'status': 'success', 'lie_answer_number': receiver.lie_answer})
@@ -78,27 +77,28 @@ def play_3t1l(request, pk):
     elif action == 'send_emoji':
         emoji_type = request.POST.get('emoji_type')
 
-        # 이미 해당 이모티콘으로 반응했는지 확인
-        if Reaction.objects.filter(reactor=viewer, receiver=receiver, emoji_type=emoji_type).exists():
-            return JsonResponse({'status': 'info', 'message': '이미 보낸 이모티콘입니다.'})
+        if Reaction.objects.filter(reactor=viewer, receiver=receiver).exists():
+            return JsonResponse({'status': 'info', 'message': '이미 이모티콘을 보냈습니다.'})
 
-        # 반응 기록 생성
         Reaction.objects.create(reactor=viewer, receiver=receiver, emoji_type=emoji_type)
 
-        # 참가자의 이모티콘 카운트 증가
-        if emoji_type == 'laughed':
-            receiver.emoji_laughed_count += 1
-        elif emoji_type == 'touched':
-            receiver.emoji_touched_count += 1
-        elif emoji_type == 'tmi':
-            receiver.emoji_tmi_count += 1
-        elif emoji_type == 'wow':
-            receiver.emoji_wow_count += 1
+        if emoji_type == 'laughed': receiver.emoji_laughed_count += 1
+        elif emoji_type == 'touched': receiver.emoji_touched_count += 1
+        elif emoji_type == 'tmi': receiver.emoji_tmi_count += 1
+        elif emoji_type == 'wow': receiver.emoji_wow_count += 1
         receiver.save()
 
-        return JsonResponse({'status': 'success', 'message': '이모티콘을 보냈습니다!'})
+        # --- [핵심] 이모티콘을 보내면 자동으로 만난 사람 목록에 추가합니다. ---
+        if not viewer.scanned_people.filter(pk=receiver.pk).exists():
+            viewer.scanned_people.add(receiver)
+            message = "이모티콘을 보내고 만난 사람 목록에 추가했습니다!"
+        else:
+            message = "이모티콘을 보냈습니다!"
+
+        return JsonResponse({'status': 'success', 'message': message})
 
     return JsonResponse({'status': 'error', 'message': '알 수 없는 요청입니다.'}, status=400)
+
 def profile_edit(request, pk):
     person = get_object_or_404(Person, pk=pk)
     
@@ -170,18 +170,23 @@ def add_scanned_person(request, pk):
     return redirect('profiles:profile_detail', pk=pk)
 
 def _create_shuffled_bingo_layout(viewer):
-    """Helper function to create a new shuffled bingo board layout."""
+    """[새로운 헬퍼 함수] 섞인 빙고판 레이아웃을 생성합니다."""
     scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
     board_size = 16
 
-    # 16칸짜리 리스트를 만듭니다.
-    full_board_items = scanned_people_ids[:board_size]
+    # 만난 사람이 16명보다 많으면, 그 중에서 16명을 무작위로 선택합니다.
+    if len(scanned_people_ids) > board_size:
+        selected_ids = random.sample(scanned_people_ids, board_size)
+    else:
+        selected_ids = scanned_people_ids
+
+    # 16칸을 채우기 위해 부족한 만큼 빈 칸(None)을 추가합니다.
+    full_board_items = selected_ids
     while len(full_board_items) < board_size:
-        full_board_items.append(None) # 빈 칸을 None으로 채웁니다.
+        full_board_items.append(None)
 
-    # [핵심 수정] 이름과 빈 칸이 섞이도록 전체 리스트를 섞습니다.
+    # 최종 16칸(이름 + 빈 칸)을 다시 한번 섞어줍니다.
     random.shuffle(full_board_items)
-
     return full_board_items
 
 def bingo_board(request):
@@ -193,12 +198,20 @@ def bingo_board(request):
     try:
         viewer = Person.objects.get(auth_token=viewer_auth_token)
 
-        # [핵심 수정] 저장된 빙고판이 16칸이 아니거나, 없다면 새로 생성합니다.
-        if len(viewer.bingo_board_layout) != 16:
+        # --- [핵심 수정] 빙고판 자동 업데이트 로직 ---
+
+        # 1. 현재 저장된 빙고판의 '사람' ID 목록을 가져옵니다.
+        saved_person_ids = set([pid for pid in viewer.bingo_board_layout if pid is not None])
+
+        # 2. 현재 '실제' 만난 사람 ID 목록을 가져옵니다.
+        current_scanned_ids = set([str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)])
+
+        # 3. 두 목록이 다르거나, 빙고판이 없으면 새로 생성합니다.
+        if not viewer.bingo_board_layout or saved_person_ids != current_scanned_ids:
             viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
             viewer.save()
 
-        # 저장된 순서대로 사람 객체를 불러옵니다.
+        # --- (이하 로직은 이전과 동일) ---
         board_ids_with_none = viewer.bingo_board_layout
         board_ids = [pid for pid in board_ids_with_none if pid is not None]
 
@@ -218,33 +231,33 @@ def bingo_board(request):
         messages.error(request, "사용자 정보를 찾을 수 없습니다.")
         return redirect('core:index')
 
-
-
 def random_profile_picker(request):
     # 사회자용 페이지를 렌더링합니다.
     return render(request, 'profiles/random_picker.html')
 
 def get_random_profile_data(request):
-    # [수정] 아직 뽑히지 않은 사람들만 대상으로 합니다.
     unpicked_people = Person.objects.filter(was_picked=False)
 
     if not unpicked_people:
-        # 더 이상 뽑을 사람이 없을 경우
         return JsonResponse({'status': 'finished', 'message': '모든 참가자를 뽑았습니다!'})
 
     random_person = random.choice(unpicked_people)
 
-    # 뽑힌 사람의 상태를 True로 변경하여 저장합니다.
     random_person.was_picked = True
     random_person.save()
-    # JSON으로 전달할 데이터를 구성합니다.
+
     data = {
-        'id': random_person.id,
+        'status': 'success',
+        'id': str(random_person.id),
         'name': random_person.name,
         'group': random_person.group,
         'team': random_person.team,
         'profile_image_url': random_person.profile_image.url if random_person.profile_image else None,
-        'bio': random_person.bio,
+        # [핵심 수정] bio 대신 새로운 문답 필드들을 전달합니다.
+        'bio_q1_answer': random_person.bio_q1_answer,
+        'bio_q2_answer': random_person.bio_q2_answer,
+        'bio_q3_answer': random_person.bio_q3_answer,
+        'prayer_request': random_person.prayer_request,
         'fun_fact': random_person.fun_fact,
     }
     return JsonResponse(data)
@@ -252,21 +265,16 @@ def get_random_profile_data(request):
 # --- [새로운 기능] 모든 참가자의 뽑기 상태를 초기화하는 뷰 ---
 @require_POST
 def reset_all_picks(request):
-    # 모든 사람의 was_picked 상태를 False로 되돌립니다.
     updated_count = Person.objects.update(was_picked=False)
     return JsonResponse({'status': 'success', 'message': f'{updated_count}명의 뽑기 상태를 초기화했습니다.'})
 
-# [새로운 기능] 빙고판을 다시 섞는 뷰
 @require_POST
 def shuffle_bingo_board(request):
     viewer_auth_token = request.session.get('auth_token')
     if viewer_auth_token:
         viewer = get_object_or_404(Person, auth_token=viewer_auth_token)
-
-        # 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
+        # [수정] 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
         viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
         viewer.save()
-
         messages.success(request, "빙고판을 새로 만들었습니다!")
-
     return redirect('profiles:bingo_board')

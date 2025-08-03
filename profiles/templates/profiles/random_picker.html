@@ -18,7 +18,6 @@
 
     <main class="flex-grow flex items-center justify-center p-4 overflow-auto">
         <div id="profile-display" class="w-full max-w-md bg-white text-gray-800 rounded-xl shadow-lg p-8 transition-opacity duration-500 opacity-0 min-h-[500px] flex flex-col items-center justify-center">
-            <!-- 프로필 내용이 여기에 동적으로 채워집니다 -->
             <p class="text-gray-500">아래 버튼을 눌러 첫 번째 참가자를 뽑아주세요.</p>
         </div>
     </main>
@@ -38,7 +37,6 @@
         const display = document.getElementById('profile-display');
         const drawBtn = document.getElementById('draw-btn');
         const resetBtn = document.getElementById('reset-btn');
-        // CSRF 토큰은 form을 사용하지 않으므로, Django 템플릿 변수로 직접 가져옵니다.
         const csrfToken = "{{ csrf_token }}"; 
 
         async function drawNextPerson() {
@@ -48,21 +46,35 @@
 
             try {
                 const response = await fetch("{% url 'profiles:get_random_profile_data' %}");
-                const result = await response.json();
+                const person = await response.json();
 
-                if (result.status === 'finished') {
-                    display.innerHTML = `<h1 class="text-3xl font-bold text-green-600">${result.message}</h1>`;
-                    drawBtn.style.display = 'none'; // 더 이상 뽑을 수 없으므로 버튼 숨김
+                if (person.status === 'finished') {
+                    display.innerHTML = `<h1 class="text-3xl font-bold text-green-600">${person.message}</h1>`;
+                    drawBtn.style.display = 'none';
                 } else {
-                    let bioHtml = result.bio ? `<div class="mt-6 w-full text-left"><h2 class="text-lg font-semibold text-gray-700">자기소개</h2><p class="mt-2 text-gray-600">${result.bio.replace(/\n/g, '<br>')}</p></div>` : '';
-                    let funFactHtml = result.fun_fact ? `<div class="mt-6 w-full text-left bg-purple-50 p-4 rounded-lg"><h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2><p class="mt-2 text-purple-800">${result.fun_fact}</p></div>` : '';
+                    // [핵심 수정] 새로운 문답 필드를 사용하여 자기소개 HTML을 생성합니다.
+                    let bioHtml = `
+                        <div class="mt-6 w-full text-left space-y-3 text-gray-600">
+                            <p>🎵 요즘 가장 즐겨듣는 찬양은 <b class="text-purple-600">${person.bio_q1_answer || '(비어있음)'}</b> 입니다.</p>
+                            <p>🤔 저의 MBTI는 <b class="text-purple-600">${person.bio_q2_answer || '(비어있음)'}</b> 입니다.</p>
+                            <p>🙏 이번 수련회에서 <b class="text-purple-600">${person.bio_q3_answer || '(비어있음)'}</b> 은혜를 받고 싶어요.</p>
+                        </div>`;
+
+                    let prayerHtml = person.prayer_request ? `
+                        <div class="mt-4 pt-4 border-t w-full text-left">
+                            <p class="font-semibold text-gray-800">🙌 저를 위해 기도해주세요!</p>
+                            <p class="mt-1 text-gray-600">${person.prayer_request.replace(/\n/g, '<br>')}</p>
+                        </div>` : '';
+
+                    let funFactHtml = person.fun_fact ? `<div class="mt-6 w-full text-left bg-purple-50 p-4 rounded-lg"><h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2><p class="mt-2 text-purple-800">${person.fun_fact}</p></div>` : '';
 
                     display.innerHTML = `
                         <div class="flex flex-col items-center w-full">
-                            <img src="${result.profile_image_url || 'https://placehold.co/150x150/EFEFEF/AAAAAA?text=No+Image'}" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
-                            <h1 class="text-4xl font-bold">${result.name}</h1>
-                            <p class="text-gray-500 mt-1 text-lg">${result.group} / ${result.team}</p>
+                            <img src="${person.profile_image_url || 'https://placehold.co/150x150/EFEFEF/AAAAAA?text=No+Image'}" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
+                            <h1 class="text-4xl font-bold">${person.name}</h1>
+                            <p class="text-gray-500 mt-1 text-lg">${person.group} / ${person.team}</p>
                             ${bioHtml}
+                            ${prayerHtml}
                             ${funFactHtml}
                         </div>
                     `;
@@ -88,8 +100,9 @@
                 });
                 const result = await response.json();
                 alert(result.message);
-                drawBtn.style.display = 'inline-block'; // 뽑기 버튼 다시 보이기
-                drawNextPerson(); // 초기화 후 첫 사람 뽑기
+                drawBtn.style.display = 'inline-block';
+                display.innerHTML = '<p class="text-gray-500">초기화 완료! 아래 버튼을 눌러 다시 시작하세요.</p>';
+                display.classList.remove('opacity-0');
             } catch (error) {
                 alert('초기화 중 오류가 발생했습니다.');
             }
@@ -97,8 +110,6 @@
 
         drawBtn.addEventListener('click', drawNextPerson);
         resetBtn.addEventListener('click', resetPicks);
-        // 페이지 로드 시 바로 뽑지 않고, 버튼을 누르면 시작하도록 변경
-        // drawNextPerson(); 
     </script>
 </body>
 </html>
