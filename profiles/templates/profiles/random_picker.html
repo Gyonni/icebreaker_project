@@ -18,7 +18,6 @@
 
     <main class="flex-grow flex items-center justify-center p-4 overflow-auto">
         <div id="profile-display" class="w-full max-w-md bg-white text-gray-800 rounded-xl shadow-lg p-8 transition-opacity duration-500 opacity-0 min-h-[500px] flex flex-col items-center justify-center">
-            <!-- 프로필 내용이 여기에 동적으로 채워집니다 -->
             <p class="text-gray-500">아래 버튼을 눌러 첫 번째 참가자를 뽑아주세요.</p>
         </div>
     </main>
@@ -38,7 +37,6 @@
         const display = document.getElementById('profile-display');
         const drawBtn = document.getElementById('draw-btn');
         const resetBtn = document.getElementById('reset-btn');
-        // CSRF 토큰은 form을 사용하지 않으므로, Django 템플릿 변수로 직접 가져옵니다.
         const csrfToken = "{{ csrf_token }}"; 
 
         async function drawNextPerson() {
@@ -52,7 +50,7 @@
 
                 if (result.status === 'finished') {
                     display.innerHTML = `<h1 class="text-3xl font-bold text-green-600">${result.message}</h1>`;
-                    drawBtn.style.display = 'none'; // 더 이상 뽑을 수 없으므로 버튼 숨김
+                    drawBtn.style.display = 'none';
                 } else {
                     let bioHtml = result.bio ? `<div class="mt-6 w-full text-left"><h2 class="text-lg font-semibold text-gray-700">자기소개</h2><p class="mt-2 text-gray-600">${result.bio.replace(/\n/g, '<br>')}</p></div>` : '';
                     let funFactHtml = result.fun_fact ? `<div class="mt-6 w-full text-left bg-purple-50 p-4 rounded-lg"><h2 class="text-lg font-semibold text-purple-700">TMI / Fun Fact! 🥳</h2><p class="mt-2 text-purple-800">${result.fun_fact}</p></div>` : '';
@@ -88,8 +86,8 @@
                 });
                 const result = await response.json();
                 alert(result.message);
-                drawBtn.style.display = 'inline-block'; // 뽑기 버튼 다시 보이기
-                drawNextPerson(); // 초기화 후 첫 사람 뽑기
+                drawBtn.style.display = 'inline-block';
+                drawNextPerson();
             } catch (error) {
                 alert('초기화 중 오류가 발생했습니다.');
             }
@@ -97,8 +95,6 @@
 
         drawBtn.addEventListener('click', drawNextPerson);
         resetBtn.addEventListener('click', resetPicks);
-        // 페이지 로드 시 바로 뽑지 않고, 버튼을 누르면 시작하도록 변경
-        // drawNextPerson(); 
     </script>
 </body>
 </html>

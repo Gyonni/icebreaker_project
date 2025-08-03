@@ -250,7 +250,9 @@ def get_random_profile_data(request):
     random_person.save()
     # JSON으로 전달할 데이터를 구성합니다.
     data = {
-        'id': random_person.id,
+        'status': 'success',
+        # ★★★ 핵심 수정: UUID를 문자열(str)로 변환하여 오류 해결 ★★★
+        'id': str(random_person.id),
         'name': random_person.name,
         'group': random_person.group,
         'team': random_person.team,
