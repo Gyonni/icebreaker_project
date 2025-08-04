@@ -24,8 +24,8 @@
             <h1 class="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight">JUSARANG X JESUSVISION</h1>
             <p class="text-xl md:text-2xl mt-2 opacity-90">2025 연합 수련회</p>
         </header>
-        
-        <!-- 메뉴 (세로 배열로 수정) -->
+
+        <!-- [수정] 모든 버튼이 이 main 태그 안에 있도록 구조 변경 -->
         <main class="flex flex-col items-center gap-6 max-w-md w-full mx-auto mt-12">
             <!-- 1. 수련회 일정 버튼 -->
             <a href="{% url 'core:schedule' %}" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
@@ -39,7 +39,7 @@
                     </div>
                 </div>
             </a>
-            
+
             <!-- 2. 내 프로필 보기 버튼 -->
             {% if viewer_profile_id %}
                 <a href="{% url 'profiles:profile_detail' viewer_profile_id %}" id="my-profile-btn" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
@@ -79,19 +79,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 4. 같이 기도해요 버튼 -->
+            <a href="{% url 'prayerboard:board' %}" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
+                <div class="flex items-center">
+                    <div class="bg-teal-500/80 p-4 rounded-lg">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">같이 기도해요</h2>
+                        <p class="opacity-80">익명으로 기도제목을 나눠요.</p>
+                    </div>
+                </div>
+            </a>
         </main>
     </div>
-    <a href="{% url 'prayerboard:board' %}" class="w-full bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-lg hover:bg-white/30 transform hover:-translate-y-1 transition-all duration-300">
-        <div class="flex items-center">
-            <div class="bg-teal-500/80 p-4 rounded-lg">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-            </div>
-            <div class="ml-4">
-                <h2 class="text-xl font-bold">같이 기도해요</h2>
-                <p class="opacity-80">익명으로 기도제목을 나눠요.</p>
-            </div>
-        </div>
-    </a>
+
     <!-- 스캐너 모달 (숨겨져 있음) -->
     <div id="scanner-container" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 hidden z-50">
         <div id="reader" class="w-full max-w-md bg-white rounded-lg overflow-hidden"></div>
