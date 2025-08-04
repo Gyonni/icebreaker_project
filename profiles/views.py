@@ -23,6 +23,14 @@ def profile_detail(request, pk):
             request.session.pop('auth_token', None)
 
     show_claim_button = (not person.is_authenticated) and (viewer is None)
+    is_already_scanned = False
+    has_reacted = False
+    has_recommended_tmi = False 
+    
+    if viewer and person != viewer:
+        is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
+        has_reacted = Reaction.objects.filter(reactor=viewer, receiver=person).exists()
+        has_recommended_tmi = TmiRecommendation.objects.filter(recommender=viewer, recommended=person).exists()
 
     sentences = []
     if person.sentence1 and person.sentence2 and person.sentence3 and person.sentence4 and person.lie_answer:
@@ -30,13 +38,6 @@ def profile_detail(request, pk):
             (1, person.sentence1), (2, person.sentence2),
             (3, person.sentence3), (4, person.sentence4)
         ]
-
-    is_already_scanned = False
-    has_reacted = False
-    if viewer and person != viewer:
-        is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
-        has_reacted = Reaction.objects.filter(reactor=viewer, receiver=person).exists()
-        has_recommended_tmi = TmiRecommendation.objects.filter(recommender=viewer, recommended=person).exists()
 
     # [핵심] 게임 활성화 상태를 데이터베이스에서 가져옵니다.
     game_status, created = GameStatus.objects.get_or_create(pk=1)
@@ -182,12 +183,12 @@ def _create_shuffled_bingo_layout(viewer):
     else:
         selected_ids = scanned_people_ids
 
-    # 16칸을 채우기 위해 부족한 만큼 빈 칸(None)을 추가합니다.
+    # 칸을 채우기 위해 부족한 만큼 빈 칸(None)을 추가합니다.
     full_board_items = selected_ids
     while len(full_board_items) < board_size:
         full_board_items.append(None)
 
-    # 최종 16칸(이름 + 빈 칸)을 다시 한번 섞어줍니다.
+    # 최종칸(이름 + 빈 칸)을 다시 한번 섞어줍니다.
     random.shuffle(full_board_items)
     return full_board_items
 
