@@ -13,6 +13,7 @@ class Person(models.Model):
     bio_q3_answer = models.CharField("자기소개 답변 3", max_length=100, blank=True)
     prayer_request = models.TextField("기도제목", blank=True)
     # -----------------------------------------------------------------------------------    
+
     fun_fact = models.CharField("재미있는 사실", max_length=200, blank=True)
     profile_image = models.ImageField("프로필 사진", upload_to='profile_images/', null=True, blank=True)
     group = models.CharField("소속", max_length=20, choices=[('주사랑교회', '주사랑교회'), ('예수비전교회', '예수비전교회')], default='주사랑교회')
@@ -25,7 +26,9 @@ class Person(models.Model):
     # --- [새로운 기능] 빙고판 순서를 저장하는 필드 ---
     # JSONField는 파이썬 리스트나 딕셔너리를 그대로 저장할 수 있어 편리합니다.
     bingo_board_layout = models.JSONField("빙고판 순서", default=list, blank=True)
-    
+    # --- [새로운 기능] TMI 추천 횟수를 기록하는 필드 ---
+    tmi_recommend_count = models.PositiveIntegerField("TMI 추천수", default=0)
+        
     # --- [핵심 수정] 3T1L 필드 이름 및 제목 변경 ---
     sentence1 = models.CharField("문장 1", max_length=255, blank=True)
     sentence2 = models.CharField("문장 2", max_length=255, blank=True)
@@ -50,7 +53,21 @@ class Person(models.Model):
     class Meta:
         verbose_name = "참가자"
         verbose_name_plural = "참가자 목록"
+        
+# --- [새로운 기능] 누가 누구의 TMI를 추천했는지 기록하는 모델 ---
+class TmiRecommendation(models.Model):
+    # 추천한 사람
+    recommender = models.ForeignKey(Person, on_delete=models.CASCADE, related_name='given_tmi_recommendations')
+    # 추천받은 사람
+    recommended = models.ForeignKey(Person, on_delete=models.CASCADE, related_name='received_tmi_recommendations')
+    timestamp = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = "TMI 추천 기록"
+        verbose_name_plural = "TMI 추천 기록"
+        # 한 사람이 다른 사람에게 추천은 한 번만 할 수 있도록 설정
+        unique_together = ('recommender', 'recommended')
+        
 class Reaction(models.Model):
     EMOJI_CHOICES = [
         ('laughed', '😂 완전 속았네!'), ('touched', '😭 감동적인 이야기'),
