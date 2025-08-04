@@ -8,13 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            /* [수정] 작동하는 새로운 나무 벽지 이미지로 교체했습니다. */
-            background-image: url('https://images.unsplash.com/photo-1600132806323-165c0633b289?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1975&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
+        /* [수정] 배경 이미지 관련 스타일을 제거했습니다. */
         .memo {
             font-family: 'Nanum Pen Script', cursive;
             font-size: 1.5rem; /* 24px */
@@ -31,11 +25,11 @@
         }
     </style>
 </head>
-<body class="w-full h-screen overflow-y-auto">
+<!-- [수정] body에 단색 배경(bg-gray-100)을 적용합니다. -->
+<body class="w-full min-h-screen overflow-y-auto bg-gray-100">
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center my-8 md:my-12">
-            <div class="inline-block bg-amber-50/90 backdrop-blur-sm p-6 rounded-lg shadow-xl border-2 border-amber-100/50 transform -rotate-1">
-                <!-- [수정] 제목 앞에 아이콘을 추가하여 폰트 깨짐 문제를 해결했습니다. -->
+            <div class="inline-block bg-amber-50 p-6 rounded-lg shadow-xl border-2 border-amber-100 transform -rotate-1">
                 <h1 class="main-title text-6xl md:text-7xl font-bold text-stone-800">🙏 익명 기도제목</h1>
                 <p class="mt-2 text-stone-600 text-lg" style="font-family: 'Noto Sans KR', sans-serif;">
                     익명으로 기도제목을 남기고, 우리의 기도제목들을 위해 기도해 주세요.
@@ -51,7 +45,7 @@
             {% endfor %}
         </div>
         <footer class="text-center my-12">
-            <a href="{% url 'core:index' %}" class="bg-white/80 backdrop-blur-sm text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-white transition-colors no-underline shadow-lg">
+            <a href="{% url 'core:index' %}" class="bg-white text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors no-underline shadow-lg">
                 &larr; 메인으로 돌아가기
             </a>
         </footer>
