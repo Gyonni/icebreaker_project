@@ -26,10 +26,8 @@
 
             <!-- 1. 프로필 헤더 -->
             <div class="flex flex-col items-center">
-                <!-- [수정] 이미지를 클릭하면 모달이 열리도록 cursor-pointer 추가 -->
-                <img id="profile-image-btn" src="..." class="... cursor-pointer">
                 {% if person.profile_image %}
-                    <img src="{{ person.profile_image.url }}" alt="{{ person.name }}의 프로필 사진" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
+                    <img id="profile-image-btn" src="{{ person.profile_image.url }}" alt="{{ person.name }}의 프로필 사진" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4 cursor-pointer">
                 {% else %}
                     <div class="w-32 h-32 bg-purple-200 rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-md">
                         <span class="text-5xl text-purple-600 font-bold">{{ person.name|first }}</span>
@@ -56,7 +54,6 @@
                             <a href="{% url 'profiles:bingo_board' %}" class="w-full text-center block bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-300 transition-colors">🎲 나의 빙고판 보기</a>
                         {% endif %}
                     {% else %}
-                        <!-- [핵심 수정] '목록에 추가' 버튼을 다시 복원합니다. -->
                         {% if is_already_scanned %}
                             <button disabled class="w-full text-white font-bold py-3 px-4 rounded-lg bg-gray-400 cursor-not-allowed">✅ 이미 만난 사람입니다</button>
                         {% else %}
@@ -67,43 +64,11 @@
                         {% endif %}
                     {% endif %}
                 {% else %}
-                    <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.</div>
+                     <div class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">자신의 QR코드를 먼저 스캔하여 프로필을 등록해주세요.</div>
                 {% endif %}
             </div>
 
-            <!-- 3. 3T1L 게임 카드 -->
-            {% if is_3t1l_active and viewer and viewer.id != person.id and sentences %}
-            <div class="mt-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
-                <h2 class="text-xl font-bold text-purple-800 text-center mb-4">🎲 3 Truths 1 Lie 게임</h2>
-                <div id="game-container" class="text-center">
-                    <button id="show-3t1l-btn" class="w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-gray-700 hover:bg-gray-800">🤫 3 Truths 1 Lie 보기</button>
-                    <div id="sentences-container" class="hidden space-y-3 text-left mt-4">
-                        {% for number, sentence in sentences %}
-                        <div class="bg-white p-3 rounded-lg border" data-number="{{ number }}">
-                            <span class="font-bold text-purple-600 mr-2">{{ number }}.</span>
-                            <span>{{ sentence }}</span>
-                        </div>
-                        {% endfor %}
-                        <button id="reveal-answer-btn" class="mt-4 w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-red-600 hover:bg-red-700">🙌 대화를 완료했어요!</button>
-                    </div>
-                    <div id="emoji-container" class="hidden mt-4">
-                        {% if has_reacted %}
-                            <p class="font-semibold mb-3 text-green-600">이모티콘 선물이 완료되었습니다!</p>
-                        {% else %}
-                            <p class="font-semibold mb-3">대화 후의 감상을 이모티콘으로 선물하세요!</p>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button data-emoji="laughed" class="emoji-btn">😂 완전 속았네!</button>
-                                <button data-emoji="touched" class="emoji-btn">😭 감동적인 이야기</button>
-                                <button data-emoji="tmi" class="emoji-btn">👍 최고의 TMI</button>
-                                <button data-emoji="wow" class="emoji-btn">🤯 대박이에요!</button>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- 4. 정보 아코디언 메뉴 -->
+            <!-- 3. 정보 아코디언 메뉴 -->
             <div class="space-y-2 pt-4 border-t">
                 <!-- 자기소개 (Q&A) -->
                 <details class="group bg-gray-50 rounded-lg p-4">
@@ -137,7 +102,6 @@
                     </summary>
                     <div class="mt-4 text-gray-600">
                         <p>{{ person.fun_fact }}</p>
-                        <!-- [새로운 기능] TMI 추천 버튼 -->
                         {% if viewer and viewer.id != person.id %}
                         <div class="mt-4 text-right">
                             <button id="recommend-tmi-btn" data-person-id="{{ person.id }}" {% if has_recommended_tmi %}disabled{% endif %} class="bg-rose-500 text-white px-4 py-2 rounded-lg hover:bg-rose-600 disabled:bg-gray-400">
@@ -145,6 +109,42 @@
                             </button>
                         </div>
                         {% endif %}
+                    </div>
+                </details>
+                {% endif %}
+
+                <!-- 3T1L 게임 -->
+                {% if is_3t1l_active and viewer and viewer.id != person.id and sentences %}
+                <details class="group bg-gray-50 rounded-lg p-4">
+                    <summary class="flex justify-between items-center font-semibold cursor-pointer list-none">
+                        <span>🎲 3 Truths 1 Lie 게임</span>
+                        <span class="transition group-open:rotate-180">
+                            <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                        </span>
+                    </summary>
+                    <div id="game-container" class="mt-4 text-center">
+                        <div id="sentences-container" class="space-y-3 text-left">
+                            {% for number, sentence in sentences %}
+                            <div class="bg-white p-3 rounded-lg border" data-number="{{ number }}">
+                                <span class="font-bold text-purple-600 mr-2">{{ number }}.</span>
+                                <span>{{ sentence }}</span>
+                            </div>
+                            {% endfor %}
+                            <button id="reveal-answer-btn" class="mt-4 w-full text-white font-bold py-3 px-4 rounded-lg transition-colors bg-red-600 hover:bg-red-700">🙌 대화를 완료했어요!</button>
+                        </div>
+                        <div id="emoji-container" class="hidden mt-4">
+                            {% if has_reacted %}
+                                <p class="font-semibold mb-3 text-green-600">이모티콘 선물이 완료되었습니다!</p>
+                            {% else %}
+                                <p class="font-semibold mb-3">대화 후의 감상을 이모티콘으로 선물하세요!</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button data-emoji="laughed" class="emoji-btn">😂 완전 속았네!</button>
+                                    <button data-emoji="touched" class="emoji-btn">😭 감동적인 이야기</button>
+                                    <button data-emoji="tmi" class="emoji-btn">👍 최고의 TMI</button>
+                                    <button data-emoji="wow" class="emoji-btn">🤯 대박이에요!</button>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </details>
                 {% endif %}
@@ -176,7 +176,7 @@
         </div>
     </div>
 
-    <!-- [새로운 기능] 프로필 사진 확대 모달 -->
+    <!-- 프로필 사진 확대 모달 -->
     <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 hidden z-50">
         <img id="modal-image" src="" class="max-w-full max-h-full rounded-lg">
         <button id="close-image-modal" class="absolute top-4 right-4 text-white text-4xl">&times;</button>
@@ -196,57 +196,32 @@
             const scannerContainer = document.getElementById('scanner-container');
             const closeScanBtn = document.getElementById('close-scan-btn');
             const html5QrCode = new Html5Qrcode("reader");
-            scanButton.addEventListener('click', () => {
-                scannerContainer.style.display = 'flex';
-                startScanner();
-            });
+            scanButton.addEventListener('click', () => { scannerContainer.style.display = 'flex'; startScanner(); });
             closeScanBtn.addEventListener('click', () => stopScanner());
             function startScanner() {
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {})
-                    .catch(err => alert("카메라를 시작할 수 없습니다. 브라우저의 카메라 권한을 확인해주세요."));
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {}).catch(err => alert("카메라를 시작할 수 없습니다."));
             }
             function stopScanner() {
-                html5QrCode.stop().then(() => scannerContainer.style.display = 'none')
-                    .catch(err => {
-                        console.error("스캐너 중지 실패", err);
-                        scannerContainer.style.display = 'none';
-                    });
+                html5QrCode.stop().then(() => scannerContainer.style.display = 'none').catch(err => { scannerContainer.style.display = 'none'; });
             }
             function onScanSuccess(decodedText, decodedResult) {
                 stopScanner();
-                try {
-                    new URL(decodedText);
-                    window.location.href = decodedText;
-                } catch (error) {
-                    alert("유효하지 않은 QR코드입니다. 이 행사의 QR코드를 사용해주세요.");
-                }
+                try { new URL(decodedText); window.location.href = decodedText; } catch (error) { alert("유효하지 않은 QR코드입니다."); }
             }
         }
 
         const gameContainer = document.getElementById('game-container');
         if (gameContainer) {
-            const showBtn = document.getElementById('show-3t1l-btn');
             const sentencesContainer = document.getElementById('sentences-container');
             const revealBtn = document.getElementById('reveal-answer-btn');
             const emojiContainer = document.getElementById('emoji-container');
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-            showBtn.addEventListener('click', () => {
-                showBtn.style.display = 'none';
-                sentencesContainer.style.display = 'block';
-            });
-
             revealBtn.addEventListener('click', async () => {
                 const formData = new FormData();
                 formData.append('action', 'reveal_answer');
-
-                const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken },
-                    body: formData
-                });
+                const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: formData });
                 const data = await response.json();
-
                 if (data.status === 'success') {
                     document.querySelectorAll('[data-number]').forEach(el => {
                         if (parseInt(el.dataset.number) === data.lie_answer_number) {
@@ -255,9 +230,7 @@
                     });
                     revealBtn.style.display = 'none';
                     emojiContainer.style.display = 'block';
-                } else {
-                    alert(data.message);
-                }
+                } else { alert(data.message); }
             });
 
             document.querySelectorAll('.emoji-btn').forEach(btn => {
@@ -267,14 +240,8 @@
                     const formData = new FormData();
                     formData.append('action', 'send_emoji');
                     formData.append('emoji_type', emojiType);
-
-                    const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': csrfToken },
-                        body: formData
-                    });
+                    const response = await fetch("{% url 'profiles:play_3t1l' person.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body: formData });
                     const data = await response.json();
-                    
                     alert(data.message);
                     document.querySelectorAll('.emoji-btn').forEach(b => b.disabled = true);
                     btn.classList.add('ring-4', 'ring-yellow-400');
@@ -284,35 +251,22 @@
 
         {% if messages %}
             let message_data = [];
-            {% for message in messages %}
-                message_data.push("{{ message }}");
-            {% endfor %}
-            if (message_data.length > 0) {
-                alert(message_data.join("\n"));
-            }
+            {% for message in messages %} message_data.push("{{ message }}"); {% endfor %}
+            if (message_data.length > 0) { alert(message_data.join("\n")); }
         {% endif %}
 
-        // 아코디언 메뉴 스크립트 (하나만 열리도록)
         const details = document.querySelectorAll("details");
         details.forEach((targetDetail) => {
             targetDetail.addEventListener("click", (event) => {
-                // 링크 클릭 시에는 아코디언 동작을 막습니다.
-                if (event.target.closest('a')) {
-                    return;
-                }
-                
-                // summary를 클릭했을 때만 다른 details를 닫습니다.
+                if (event.target.closest('a')) { return; }
                 if (event.target.closest('summary')) {
                     details.forEach((detail) => {
-                        if (detail !== targetDetail) {
-                            detail.removeAttribute("open");
-                        }
+                        if (detail !== targetDetail) { detail.removeAttribute("open"); }
                     });
                 }
             });
         });
 
-        // --- [새로운 기능] 프로필 사진 확대 스크립트 ---
         const imageBtn = document.getElementById('profile-image-btn');
         const imageModal = document.getElementById('image-modal');
         const modalImage = document.getElementById('modal-image');
@@ -333,13 +287,11 @@
             });
         }
 
-        // --- [새로운 기능] TMI 추천 스크립트 ---
         const recommendBtn = document.getElementById('recommend-tmi-btn');
         if (recommendBtn) {
             recommendBtn.addEventListener('click', async () => {
                 const personId = recommendBtn.dataset.personId;
                 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
                 try {
                     const response = await fetch(`/profiles/${personId}/recommend_tmi/`, {
                         method: 'POST',
