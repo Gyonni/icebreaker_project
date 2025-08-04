@@ -31,8 +31,8 @@ def export_as_excel(modeladmin, request, queryset):
         worksheet.cell(row=1, column=6, value='QR Code 이미지')
         for index, person in enumerate(queryset):
             worksheet.row_dimensions[index + 2].height = 85
-            profile_url = request.build_absolute_uri(reverse('profiles:profile_detail', args=[str(person.id)]))
-            qr_img = qrcode.make(profile_url, box_size=3)
+            qr_url = request.build_absolute_uri(reverse('profiles:profile_detail', args=[str(person.id)]))
+            qr_img = qrcode.make(qr_url, box_size=3)
             img_buffer = BytesIO()
             qr_img.save(img_buffer, format='PNG')
             img_buffer.seek(0)
@@ -58,9 +58,9 @@ def reset_scanned_people(modeladmin, request, queryset):
     count = len(queryset)
     for person in queryset:
         person.scanned_people.clear()
+        person.scanned_by.clear()
     messages.success(request, f"{count}명의 '만난 사람' 목록을 성공적으로 초기화했습니다.")
 
-# --- [새로운 기능] 선택된 참가자의 이모티콘 받은 개수 초기화 ---
 @admin.action(description='선택된 참가자의 이모티콘 받은 개수 초기화')
 def reset_emoji_counts(modeladmin, request, queryset):
     updated_count = queryset.update(
@@ -70,11 +70,9 @@ def reset_emoji_counts(modeladmin, request, queryset):
     Reaction.objects.filter(receiver__in=queryset).delete()
     messages.success(request, f"{updated_count}명의 이모티콘 받은 개수와 반응 기록을 초기화했습니다.")
 
-# --- [새로운 기능] 선택된 참가자의 TMI 추천수 초기화 ---
 @admin.action(description='선택된 참가자의 TMI 추천수 초기화')
 def reset_tmi_recommendations(modeladmin, request, queryset):
     updated_count = queryset.update(tmi_recommend_count=0)
-    # 추천 기록도 함께 삭제해야 다시 추천할 수 있습니다.
     TmiRecommendation.objects.filter(recommended__in=queryset).delete()
     messages.success(request, f"{updated_count}명의 TMI 추천수와 추천 기록을 초기화했습니다.")
 
@@ -82,14 +80,19 @@ def reset_tmi_recommendations(modeladmin, request, queryset):
 class PersonAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'unique_code', 'group', 'team', 
-        'tmi_recommend_count', # [수정] TMI 추천수 컬럼 추가   
+        'tmi_recommend_count',
         'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
         'is_authenticated', 'scanned_count', 'view_qr_code'
     )
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
-    # [수정] 새로운 이모티콘 초기화 액션을 추가합니다.
-    actions = [reset_authentication, reset_scanned_people, export_as_excel, reset_emoji_counts, reset_tmi_recommendations]
+    actions = [
+        reset_authentication, 
+        reset_scanned_people, 
+        export_as_excel, 
+        reset_emoji_counts, 
+        reset_tmi_recommendations
+    ]
     change_list_template = "admin/profiles/person/change_list.html"
 
     def get_urls(self):
@@ -118,17 +121,40 @@ class PersonAdmin(admin.ModelAdmin):
                     missing_cols = [col for col in required_columns if col not in df.columns]
                     self.message_user(request, f"엑셀 파일에 다음 필수 컬럼이 없습니다: {', '.join(missing_cols)}", level=messages.ERROR)
                     return redirect('.')
+                
                 for index, row in df.iterrows():
                     unique_code = row.get('고유번호')
-                    if not unique_code: continue
-                    Person.objects.update_or_create(
+                    if not unique_code:
+                        continue
+                    
+                    # [핵심 수정] 엑셀 업로드 시, 프로필 사진을 포함한 모든 개인 데이터를 초기화합니다.
+                    person, created = Person.objects.update_or_create(
                         unique_code=str(unique_code),
                         defaults={
-                            'name': row['이름'], 'group': row['소속'], 'team': row['팀'],
-                            'bio': row.get('소개', ''), 'fun_fact': row.get('재미있는 사실', '')
+                            'name': row['이름'],
+                            'group': row['소속'],
+                            'team': row['팀'],
+                            # 모든 개인화 정보 초기화
+                            'profile_image': None,
+                            'bio_q1_answer': "", 'bio_q2_answer': "", 'bio_q3_answer': "",
+                            'prayer_request': "", 'fun_fact': "",
+                            'sentence1': "", 'sentence2': "", 'sentence3': "", 'sentence4': "",
+                            'lie_answer': None, 'emoji_laughed_count': 0, 'emoji_touched_count': 0,
+                            'emoji_tmi_count': 0, 'emoji_wow_count': 0, 'tmi_recommend_count': 0,
+                            'was_picked': False, 'bingo_board_layout': [],
+                            'is_authenticated': False, 'auth_token': None,
                         }
                     )
-                self.message_user(request, "엑셀 파일로부터 성공적으로 사용자들을 추가/업데이트했습니다.")
+                    
+                    # 관계 데이터도 모두 초기화
+                    person.scanned_people.clear()
+                    person.scanned_by.clear()
+                    Reaction.objects.filter(reactor=person).delete()
+                    Reaction.objects.filter(receiver=person).delete()
+                    TmiRecommendation.objects.filter(recommender=person).delete()
+                    TmiRecommendation.objects.filter(recommended=person).delete()
+
+                self.message_user(request, f"{len(df)}명의 참가자 정보가 성공적으로 등록/초기화되었습니다.")
             except Exception as e:
                 self.message_user(request, f"파일 처리 중 오류가 발생했습니다: {e}", level=messages.ERROR)
             return redirect('..')
@@ -151,7 +177,6 @@ class PersonAdmin(admin.ModelAdmin):
             return "URL 확인 필요"
     view_qr_code.short_description = "QR Code 생성"
 
-
 @admin.register(Reaction)
 class ReactionAdmin(admin.ModelAdmin):
     list_display = ('receiver', 'reactor', 'emoji_type', 'timestamp')
@@ -161,11 +186,13 @@ class ReactionAdmin(admin.ModelAdmin):
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
-    
-# [새로운 기능] TmiRecommendation 모델을 관리자 페이지에 등록
+
 @admin.register(TmiRecommendation)
 class TmiRecommendationAdmin(admin.ModelAdmin):
     list_display = ('recommended', 'recommender', 'timestamp')
     list_filter = ('recommended__name', 'recommender__name')
     search_fields = ('recommended__name', 'recommender__name')
     readonly_fields = ('recommender', 'recommended', 'timestamp')
+    def has_add_permission(self, request): return False
+    def has_change_permission(self, request, obj=None): return False
+    def has_delete_permission(self, request, obj=None): return False
