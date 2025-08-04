@@ -18,4 +18,5 @@ urlpatterns = [
     re_path(r'^(?P<pk>[a-f0-9-]+)/add/?$', views.add_scanned_person, name='add_scanned_person'),
     re_path(r'^(?P<pk>[a-f0-9-]+)/edit/?$', views.profile_edit, name='profile_edit'),
     re_path(r'^(?P<pk>[a-f0-9-]+)/play_3t1l/?$', views.play_3t1l, name='play_3t1l'),
+    re_path(r'^(?P<pk>[a-f0-9-]+)/recommend_tmi/?$', views.recommend_tmi, name='recommend_tmi'),
 ]

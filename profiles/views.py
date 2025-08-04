@@ -3,7 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from .models import Person, Reaction
+from .models import Person, Reaction, TmiRecommendation
 from .forms import ProfileForm
 import qrcode
 from io import BytesIO
@@ -36,6 +36,7 @@ def profile_detail(request, pk):
     if viewer and person != viewer:
         is_already_scanned = viewer.scanned_people.filter(pk=person.pk).exists()
         has_reacted = Reaction.objects.filter(reactor=viewer, receiver=person).exists()
+        has_recommended_tmi = TmiRecommendation.objects.filter(recommender=viewer, recommended=person).exists()
 
     # [핵심] 게임 활성화 상태를 데이터베이스에서 가져옵니다.
     game_status, created = GameStatus.objects.get_or_create(pk=1)
@@ -50,6 +51,7 @@ def profile_detail(request, pk):
         'has_reacted': has_reacted,
         'is_3t1l_active': game_status.is_3t1l_active,
         'is_bingo_active': game_status.is_bingo_active,
+        'has_recommended_tmi': has_recommended_tmi, # 추천 여부 전달
     }
     return render(request, 'profiles/profile_detail.html', context)
 
@@ -172,7 +174,7 @@ def add_scanned_person(request, pk):
 def _create_shuffled_bingo_layout(viewer):
     """[새로운 헬퍼 함수] 섞인 빙고판 레이아웃을 생성합니다."""
     scanned_people_ids = [str(pid) for pid in viewer.scanned_people.values_list('id', flat=True)]
-    board_size = 16
+    board_size = 25
 
     # 만난 사람이 16명보다 많으면, 그 중에서 16명을 무작위로 선택합니다.
     if len(scanned_people_ids) > board_size:
@@ -276,5 +278,23 @@ def shuffle_bingo_board(request):
         # [수정] 헬퍼 함수를 사용하여 새로운 섞인 빙고판을 생성하고 저장합니다.
         viewer.bingo_board_layout = _create_shuffled_bingo_layout(viewer)
         viewer.save()
-        messages.success(request, "빙고판을 새로 만들었습니다!")
     return redirect('profiles:bingo_board')
+
+@require_POST
+def recommend_tmi(request, pk):
+    recommended = get_object_or_404(Person, pk=pk)
+    viewer_auth_token = request.session.get('auth_token')
+    if not viewer_auth_token:
+        return JsonResponse({'status': 'error', 'message': '인증 정보가 없습니다.'}, status=401)
+
+    try:
+        recommender = Person.objects.get(auth_token=viewer_auth_token)
+        if TmiRecommendation.objects.filter(recommender=recommender, recommended=recommended).exists():
+            return JsonResponse({'status': 'info', 'message': '이미 추천했습니다.'})
+
+        TmiRecommendation.objects.create(recommender=recommender, recommended=recommended)
+        recommended.tmi_recommend_count += 1
+        recommended.save()
+        return JsonResponse({'status': 'success', 'message': 'TMI를 추천했습니다!', 'new_count': recommended.tmi_recommend_count})
+    except Person.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': '유효하지 않은 사용자입니다.'}, status=401)

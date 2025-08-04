@@ -26,6 +26,8 @@
 
             <!-- 1. 프로필 헤더 -->
             <div class="flex flex-col items-center">
+                <!-- [수정] 이미지를 클릭하면 모달이 열리도록 cursor-pointer 추가 -->
+                <img id="profile-image-btn" src="..." class="... cursor-pointer">
                 {% if person.profile_image %}
                     <img src="{{ person.profile_image.url }}" alt="{{ person.name }}의 프로필 사진" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4">
                 {% else %}
@@ -133,7 +135,17 @@
                             <svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
                         </span>
                     </summary>
-                    <p class="mt-4 text-gray-600">{{ person.fun_fact }}</p>
+                    <div class="mt-4 text-gray-600">
+                        <p>{{ person.fun_fact }}</p>
+                        <!-- [새로운 기능] TMI 추천 버튼 -->
+                        {% if viewer and viewer.id != person.id %}
+                        <div class="mt-4 text-right">
+                            <button id="recommend-tmi-btn" data-person-id="{{ person.id }}" {% if has_recommended_tmi %}disabled{% endif %} class="bg-rose-500 text-white px-4 py-2 rounded-lg hover:bg-rose-600 disabled:bg-gray-400">
+                                👍 추천 (<span id="tmi-count">{{ person.tmi_recommend_count }}</span>)
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
                 </details>
                 {% endif %}
 
@@ -162,6 +174,12 @@
                 </details>
             </div>
         </div>
+    </div>
+
+    <!-- [새로운 기능] 프로필 사진 확대 모달 -->
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 hidden z-50">
+        <img id="modal-image" src="" class="max-w-full max-h-full rounded-lg">
+        <button id="close-image-modal" class="absolute top-4 right-4 text-white text-4xl">&times;</button>
     </div>
 
     <!-- 스캐너 모달 -->
@@ -293,6 +311,51 @@
                 }
             });
         });
+
+        // --- [새로운 기능] 프로필 사진 확대 스크립트 ---
+        const imageBtn = document.getElementById('profile-image-btn');
+        const imageModal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const closeImageModal = document.getElementById('close-image-modal');
+
+        if(imageBtn) {
+            imageBtn.addEventListener('click', () => {
+                modalImage.src = imageBtn.src;
+                imageModal.classList.remove('hidden');
+            });
+            closeImageModal.addEventListener('click', () => {
+                imageModal.classList.add('hidden');
+            });
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) {
+                    imageModal.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- [새로운 기능] TMI 추천 스크립트 ---
+        const recommendBtn = document.getElementById('recommend-tmi-btn');
+        if (recommendBtn) {
+            recommendBtn.addEventListener('click', async () => {
+                const personId = recommendBtn.dataset.personId;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                try {
+                    const response = await fetch(`/profiles/${personId}/recommend_tmi/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        document.getElementById('tmi-count').textContent = data.new_count;
+                        recommendBtn.disabled = true;
+                    }
+                    alert(data.message);
+                } catch (error) {
+                    alert('오류가 발생했습니다.');
+                }
+            });
+        }
     });
     </script>
 </body>

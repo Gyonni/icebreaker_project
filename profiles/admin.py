@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.db.models import Count
 from django.utils.html import format_html
 from django.http import HttpResponse
-from .models import Person, Reaction 
+from .models import Person, Reaction, TmiRecommendation
 import pandas as pd
 import datetime
 import qrcode
@@ -79,6 +79,7 @@ def reset_emoji_counts(modeladmin, request, queryset):
 class PersonAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'unique_code', 'group', 'team', 
+        'tmi_recommend_count', # [수정] TMI 추천수 컬럼 추가   
         'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
         'is_authenticated', 'scanned_count', 'view_qr_code'
     )
@@ -157,3 +158,11 @@ class ReactionAdmin(admin.ModelAdmin):
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
+    
+# [새로운 기능] TmiRecommendation 모델을 관리자 페이지에 등록
+@admin.register(TmiRecommendation)
+class TmiRecommendationAdmin(admin.ModelAdmin):
+    list_display = ('recommended', 'recommender', 'timestamp')
+    list_filter = ('recommended__name', 'recommender__name')
+    search_fields = ('recommended__name', 'recommender__name')
+    readonly_fields = ('recommender', 'recommended', 'timestamp')

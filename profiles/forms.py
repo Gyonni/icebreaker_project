@@ -30,7 +30,7 @@ class ProfileForm(forms.ModelForm):
         }
         labels = {
             'name': '이름',
-            'fun_fact': '재미있는 사실',
+            'fun_fact': '재미있는 사실 (TMI)',
             'profile_image': '프로필 사진',
             'bio_q1_answer': '답변 1',
             'bio_q2_answer': '답변 2',
