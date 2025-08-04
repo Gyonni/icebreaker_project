@@ -26,6 +26,7 @@ urlpatterns = [
     path('profiles/', include('profiles.urls')),
     # 최상위 주소('')는 새로 만든 main 앱이 담당하도록 추가
     path('', include('core.urls')),
+    path('prayers/', include('prayerboard.urls')),
 ]
 
 if settings.DEBUG:

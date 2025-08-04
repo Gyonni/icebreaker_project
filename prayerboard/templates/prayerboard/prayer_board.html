@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>같이 기도해요</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://images.unsplash.com/photo-1593330108731-db397a8c45a6');
+            background-size: cover;
+            background-position: center;
+        }
+        .memo {
+            font-family: 'Nanum Pen Script', cursive;
+            font-size: 1.5rem; /* 24px */
+            line-height: 2rem; /* 32px */
+            box-shadow: 5px 5px 7px rgba(33,33,33,.7);
+            transition: transform .15s linear;
+        }
+        .memo:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body class="w-full h-screen overflow-y-auto">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center my-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white bg-black/50 rounded-lg p-4 inline-block">🙏 같이 기도해요</h1>
+        </header>
+
+        <div id="memo-board" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {% for item in memo_styles %}
+            <div class="memo p-4 h-48 {{ item.color }} {{ item.rotation }}">
+                <p>{{ item.prayer.content|linebreaksbr }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 기도제목 작성 버튼 -->
+    <button id="add-btn" class="fixed bottom-8 right-8 bg-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-4xl shadow-lg hover:bg-purple-700 transition-transform hover:scale-110">+</button>
+
+    <!-- 기도제목 작성 모달 -->
+    <div id="prayer-modal" class="fixed inset-0 bg-black/60 items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4">기도제목 나누기</h2>
+            <form id="prayer-form">
+                {% csrf_token %}
+                <textarea name="content" class="w-full h-40 p-2 border rounded" placeholder="기도제목을 자유롭게 나눠주세요." required></textarea>
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button type="button" id="close-modal-btn" class="px-4 py-2 bg-gray-200 rounded">취소</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">기도 올리기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addBtn = document.getElementById('add-btn');
+            const modal = document.getElementById('prayer-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const prayerForm = document.getElementById('prayer-form');
+            const memoBoard = document.getElementById('memo-board');
+
+            addBtn.addEventListener('click', () => modal.style.display = 'flex');
+            closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+
+            prayerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(prayerForm);
+
+                try {
+                    const response = await fetch("{% url 'prayerboard:add' %}", {
+                        method: 'POST',
+                        body: new URLSearchParams(formData)
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message);
+                        location.reload(); // 성공 시 페이지 새로고침
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    alert('오류가 발생했습니다.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
