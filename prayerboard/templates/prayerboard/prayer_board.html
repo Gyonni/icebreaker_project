@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background-image: url('https://images.unsplash.com/photo-1593330108731-db397a8c45a6');
+            /* 어둡고 차분한 톤의 나무 벽지 이미지를 배경으로 사용하고, 스크롤해도 움직이지 않도록 고정합니다. */
+            background-image: url('https://images.unsplash.com/photo-1593330108731-db397a8c45a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -18,21 +19,28 @@
             font-family: 'Nanum Pen Script', cursive;
             font-size: 1.5rem; /* 24px */
             line-height: 2rem; /* 32px */
-            box-shadow: 5px 5px 7px rgba(33,33,33,.7);
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.4);
             transition: transform .15s linear;
         }
-        .memo:hover { transform: scale(1.05); }
-        .main-title { font-family: 'Nanum Pen Script', cursive; }
+        .memo:hover { 
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .main-title { 
+            font-family: 'Nanum Pen Script', cursive; 
+        }
     </style>
 </head>
 <body class="w-full h-screen overflow-y-auto">
     <div class="container mx-auto p-4 md:p-8">
-        <!-- [수정] 헤더 디자인 개선 -->
+        <!-- [수정] 헤더 디자인: 빈티지한 종이 컨셉 적용 -->
         <header class="text-center my-8 md:my-12">
-            <h1 class="main-title text-6xl md:text-7xl font-bold text-yellow-200 drop-shadow-xl">익명 기도제목</h1>
-            <p class="mt-2 text-white/90 text-lg bg-black/30 rounded-full px-4 py-1 inline-block" style="font-family: 'Noto Sans KR', sans-serif;">
-                익명으로 기도제목을 남기고, 우리의 기도제목들을 위해 기도해 주세요.
-            </p>
+            <div class="inline-block bg-amber-50/90 backdrop-blur-sm p-6 rounded-lg shadow-xl border-2 border-amber-100/50 transform -rotate-1">
+                <h1 class="main-title text-6xl md:text-7xl font-bold text-stone-800">익명 기도제목</h1>
+                <p class="mt-2 text-stone-600 text-lg" style="font-family: 'Noto Sans KR', sans-serif;">
+                    익명으로 기도제목을 남기고, 우리의 기도제목들을 위해 기도해 주세요.
+                </p>
+            </div>
         </header>
 
         <div id="memo-board" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -73,7 +81,6 @@
             const modal = document.getElementById('prayer-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const prayerForm = document.getElementById('prayer-form');
-            const memoBoard = document.getElementById('memo-board');
 
             addBtn.addEventListener('click', () => modal.style.display = 'flex');
             closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
@@ -90,7 +97,7 @@
                     const result = await response.json();
                     if (response.ok) {
                         alert(result.message);
-                        location.reload(); // 성공 시 페이지 새로고침
+                        location.reload();
                     } else {
                         alert(result.message);
                     }
