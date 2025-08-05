@@ -1,7 +1,8 @@
 from django.contrib import admin, messages
 from django.urls import path, reverse
 from django.shortcuts import render, redirect
-from django.db.models import Count
+from django.db.models import Count, IntegerField
+from django.db.models.functions import Cast
 from django.utils.html import format_html
 from django.http import HttpResponse
 from .models import Person, Reaction, TmiRecommendation
@@ -27,8 +28,14 @@ def export_as_excel(modeladmin, request, queryset):
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Participants')
         worksheet = writer.sheets['Participants']
+        worksheet.column_dimensions['A'].width = 15
+        worksheet.column_dimensions['B'].width = 20
+        worksheet.column_dimensions['C'].width = 20
+        worksheet.column_dimensions['D'].width = 20
+        worksheet.column_dimensions['E'].width = 60
         worksheet.column_dimensions['F'].width = 16
         worksheet.cell(row=1, column=6, value='QR Code 이미지')
+
         for index, person in enumerate(queryset):
             worksheet.row_dimensions[index + 2].height = 85
             qr_url = request.build_absolute_uri(reverse('profiles:profile_detail', args=[str(person.id)]))
@@ -80,12 +87,12 @@ def reset_tmi_recommendations(modeladmin, request, queryset):
 class PersonAdmin(admin.ModelAdmin):
     list_display = (
         'name', 
-        'numeric_unique_code', # [수정] 정렬 가능한 고유번호 필드
+        'numeric_unique_code',
         'group', 'team', 
         'tmi_recommend_count',
         'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
         'is_authenticated', 
-        'scanned_count', # [수정] 정렬 가능한 만난 사람 수 필드
+        'scanned_count',
         'view_qr_code'
     )
     list_filter = ('group', 'team', 'is_authenticated')
@@ -101,7 +108,6 @@ class PersonAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        # [수정] 정렬에 필요한 모든 임시 필드를 한 번에 annotate 합니다.
         queryset = queryset.annotate(
             numeric_code=Cast('unique_code', output_field=IntegerField()),
             num_scanned=Count('scanned_people', distinct=True)
@@ -114,9 +120,8 @@ class PersonAdmin(admin.ModelAdmin):
 
     @admin.display(description='만난 사람 수', ordering='num_scanned')
     def scanned_count(self, obj):
-        # annotate된 필드 이름이 _scanned_count가 아닌 num_scanned 이므로, 직접 접근합니다.
         return obj.num_scanned
-    
+
     def get_urls(self):
         urls = super().get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -124,7 +129,7 @@ class PersonAdmin(admin.ModelAdmin):
             path('import_excel/', self.admin_site.admin_view(self.import_from_excel), name='%s_%s_import_excel' % info),
             path('export_excel_all/', self.admin_site.admin_view(self.export_all_participants), name='%s_%s_export_excel_all' % info),
         ]
-        return custom_urls + urls
+        return custom_urls
 
     def export_all_participants(self, request):
         queryset = Person.objects.all()
@@ -149,47 +154,29 @@ class PersonAdmin(admin.ModelAdmin):
                     if not unique_code:
                         continue
                     
-                    # [핵심 수정] 엑셀 업로드 시, 프로필 사진을 포함한 모든 개인 데이터를 초기화합니다.
                     person, created = Person.objects.update_or_create(
                         unique_code=str(unique_code),
                         defaults={
-                            'name': row['이름'],
-                            'group': row['소속'],
-                            'team': row['팀'],
-                            # 모든 개인화 정보 초기화
-                            'profile_image': None,
-                            'bio_q1_answer': "", 'bio_q2_answer': "", 'bio_q3_answer': "",
-                            'prayer_request': "", 'fun_fact': "",
-                            'sentence1': "", 'sentence2': "", 'sentence3': "", 'sentence4': "",
+                            'name': row['이름'], 'group': row['소속'], 'team': row['팀'],
+                            'profile_image': None, 'bio_q1_answer': "", 'bio_q2_answer': "", 'bio_q3_answer': "",
+                            'prayer_request': "", 'fun_fact': "", 'sentence1': "", 'sentence2': "", 'sentence3': "", 'sentence4': "",
                             'lie_answer': None, 'emoji_laughed_count': 0, 'emoji_touched_count': 0,
                             'emoji_tmi_count': 0, 'emoji_wow_count': 0, 'tmi_recommend_count': 0,
-                            'was_picked': False, 'bingo_board_layout': [],
-                            'is_authenticated': False, 'auth_token': None,
+                            'was_picked': False, 'bingo_board_layout': [], 'is_authenticated': False, 'auth_token': None,
                         }
                     )
                     
-                    # 관계 데이터도 모두 초기화
                     person.scanned_people.clear()
                     person.scanned_by.clear()
                     Reaction.objects.filter(reactor=person).delete()
                     Reaction.objects.filter(receiver=person).delete()
                     TmiRecommendation.objects.filter(recommender=person).delete()
                     TmiRecommendation.objects.filter(recommended=person).delete()
-
                 self.message_user(request, f"{len(df)}명의 참가자 정보가 성공적으로 등록/초기화되었습니다.")
             except Exception as e:
                 self.message_user(request, f"파일 처리 중 오류가 발생했습니다: {e}", level=messages.ERROR)
             return redirect('..')
         return render(request, 'admin/profiles/person/import_excel_form.html', {"opts": self.model._meta})
-
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return queryset.annotate(_scanned_count=Count('scanned_people', distinct=True))
-
-    def scanned_count(self, obj):
-        return obj._scanned_count
-    scanned_count.short_description = '만난 사람 수'
-    scanned_count.admin_order_field = '_scanned_count'
 
     def view_qr_code(self, obj):
         try:
