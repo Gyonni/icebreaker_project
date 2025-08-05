@@ -1,6 +1,9 @@
 from django.shortcuts import render
-# profiles 앱의 Person 모델을 가져와서 사용합니다.
-from profiles.models import Person
+from django.http import HttpResponse
+from django.urls import reverse # [수정] reverse 함수를 import 합니다.
+from profiles.models import Person # index 뷰에서 사용하므로 import
+import qrcode
+from io import BytesIO
 
 def index(request):
     # 브라우저 세션에서 사용자의 인증 토큰을 확인합니다.
