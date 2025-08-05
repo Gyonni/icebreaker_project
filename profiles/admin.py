@@ -129,7 +129,8 @@ class PersonAdmin(admin.ModelAdmin):
             path('import_excel/', self.admin_site.admin_view(self.import_from_excel), name='%s_%s_import_excel' % info),
             path('export_excel_all/', self.admin_site.admin_view(self.export_all_participants), name='%s_%s_export_excel_all' % info),
         ]
-        return custom_urls
+        # [핵심 수정] 커스텀 URL과 기본 URL을 모두 반환하도록 수정합니다.
+        return custom_urls + urls
 
     def export_all_participants(self, request):
         queryset = Person.objects.all()
