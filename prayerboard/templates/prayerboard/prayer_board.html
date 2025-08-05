@@ -39,7 +39,9 @@
 
         <div id="memo-board" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {% for item in memo_styles %}
-            <div class="memo p-4 h-48 {{ item.color }} {{ item.rotation }}">
+            <div class="memo p-4 h-48 relative {{ item.color }} {{ item.rotation }}">
+                <!-- [새로운 기능] 삭제 버튼 추가 -->
+                <button class="delete-btn absolute top-2 right-2 text-gray-500 hover:text-red-600" data-id="{{ item.prayer.id }}">&times;</button>
                 <p>{{ item.prayer.content|linebreaksbr }}</p>
             </div>
             {% endfor %}
@@ -60,7 +62,9 @@
             <h2 class="text-2xl font-bold mb-4">기도제목 나누기</h2>
             <form id="prayer-form">
                 {% csrf_token %}
-                <textarea name="content" class="w-full h-40 p-2 border rounded" placeholder="기도제목을 자유롭게 나눠주세요." required></textarea>
+                <textarea name="content" class="w-full h-32 p-2 border rounded" placeholder="기도제목을 자유롭게 나눠주세요." required></textarea>
+                <!-- [새로운 기능] 비밀번호 입력 필드 추가 -->
+                <input type="password" name="password" class="w-full mt-2 p-2 border rounded" placeholder="삭제용 비밀번호 (4자리 숫자)" required maxlength="4" pattern="[0-9]{4}">
                 <div class="mt-4 flex justify-end space-x-3">
                     <button type="button" id="close-modal-btn" class="px-4 py-2 bg-gray-200 rounded">취소</button>
                     <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded">기도 올리기</button>
@@ -69,35 +73,72 @@
         </div>
     </div>
 
+    <!-- [새로운 기능] 기도제목 삭제 모달 -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/60 items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4">기도제목 삭제</h2>
+            <form id="delete-form">
+                <input type="password" name="password" class="w-full p-2 border rounded" placeholder="삭제용 비밀번호 (4자리 숫자)" required maxlength="4" pattern="[0-9]{4}">
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button type="button" id="close-delete-modal-btn" class="px-4 py-2 bg-gray-200 rounded">취소</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded">삭제하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const addBtn = document.getElementById('add-btn');
-            const modal = document.getElementById('prayer-modal');
+            const prayerModal = document.getElementById('prayer-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const prayerForm = document.getElementById('prayer-form');
 
-            addBtn.addEventListener('click', () => modal.style.display = 'flex');
-            closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+            const deleteModal = document.getElementById('delete-modal');
+            const closeDeleteModalBtn = document.getElementById('close-delete-modal-btn');
+            const deleteForm = document.getElementById('delete-form');
+            let currentPrayerId = null;
+
+            addBtn.addEventListener('click', () => prayerModal.style.display = 'flex');
+            closeModalBtn.addEventListener('click', () => prayerModal.style.display = 'none');
+            closeDeleteModalBtn.addEventListener('click', () => deleteModal.style.display = 'none');
 
             prayerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(prayerForm);
-
                 try {
                     const response = await fetch("{% url 'prayerboard:add' %}", {
                         method: 'POST',
                         body: new URLSearchParams(formData)
                     });
                     const result = await response.json();
-                    if (response.ok) {
-                        alert(result.message);
-                        location.reload();
-                    } else {
-                        alert(result.message);
-                    }
-                } catch (error) {
-                    alert('오류가 발생했습니다.');
-                }
+                    alert(result.message);
+                    if (response.ok) location.reload();
+                } catch (error) { alert('오류가 발생했습니다.'); }
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPrayerId = btn.dataset.id;
+                    deleteModal.style.display = 'flex';
+                });
+            });
+
+            deleteForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(deleteForm);
+                const csrfToken = prayerForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                try {
+                    const response = await fetch(`/prayers/delete/${currentPrayerId}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: new URLSearchParams(formData)
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    if (response.ok) location.reload();
+                } catch (error) { alert('오류가 발생했습니다.'); }
             });
         });
     </script>
