@@ -23,4 +23,11 @@
     {% else %}
         <li><a href="toggle-shuffle/" class="button" style="background-color: #28a745;">빙고판 섞기 활성화</a></li>
     {% endif %}
+
+    <!-- --- [새로운 기능] 홈페이지 QR 코드 보기 버튼 --- -->
+    <li>
+        <a href="{% url 'core:homepage_qr' %}" target="_blank" class="button" style="background-color: #17a2b8;">
+            홈페이지 QR 코드 보기
+        </a>
+    </li>
 {% endblock %}

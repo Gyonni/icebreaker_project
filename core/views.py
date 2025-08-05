@@ -26,3 +26,19 @@ def index(request):
 def schedule(request):
     # 수련회 일정 페이지는 변경사항이 없습니다.
     return render(request, 'core/schedule.html')
+
+
+# --- [새로운 기능] 메인 홈페이지 QR 코드를 생성하는 뷰 함수 ---
+def generate_homepage_qr(request):
+    # 홈페이지의 전체 URL 주소를 가져옵니다. (예: https://jusarangxjesusvision.kr/)
+    homepage_url = request.build_absolute_uri(reverse('core:index'))
+
+    # qrcode 라이브러리를 사용하여 QR 코드 이미지를 생성합니다.
+    img = qrcode.make(homepage_url)
+
+    # 생성된 이미지를 메모리 버퍼에 PNG 형식으로 저장합니다.
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+
+    # 이미지 파일로 HTTP 응답을 반환합니다.
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
