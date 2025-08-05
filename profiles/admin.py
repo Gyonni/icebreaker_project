@@ -78,8 +78,9 @@ def reset_tmi_recommendations(modeladmin, request, queryset):
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
+    # [수정] list_display에서 'unique_code'를 'numeric_unique_code'로 변경합니다.
     list_display = (
-        'name', 'unique_code', 'group', 'team', 
+        'name', 'numeric_unique_code', 'group', 'team', 
         'tmi_recommend_count',
         'emoji_laughed_count', 'emoji_touched_count', 'emoji_tmi_count', 'emoji_wow_count',
         'is_authenticated', 'scanned_count', 'view_qr_code'
@@ -87,14 +88,31 @@ class PersonAdmin(admin.ModelAdmin):
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
     actions = [
-        reset_authentication, 
-        reset_scanned_people, 
-        export_as_excel, 
-        reset_emoji_counts, 
-        reset_tmi_recommendations
+        'reset_authentication', 
+        'reset_scanned_people', 
+        'export_as_excel', 
+        'reset_emoji_counts', 
+        'reset_tmi_recommendations'
     ]
     change_list_template = "admin/profiles/person/change_list.html"
 
+    # --- [핵심 수정] 고유번호를 숫자로 변환하여 정렬하는 로직 추가 ---
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        # unique_code 필드를 정수(Integer)로 변환한 'numeric_code'라는 임시 필드를 추가합니다.
+        queryset = queryset.annotate(
+            numeric_code=Cast('unique_code', output_field=IntegerField())
+        )
+        # 기존의 만난 사람 수 계산 로직은 그대로 유지합니다.
+        queryset = queryset.annotate(_scanned_count=Count('scanned_people', distinct=True))
+        return queryset
+
+    @admin.display(description='고유번호', ordering='numeric_code')
+    def numeric_unique_code(self, obj):
+        # 화면에는 원래의 unique_code를 보여주지만,
+        # 정렬 기준(ordering)은 위에서 만든 임시 숫자 필드 'numeric_code'를 사용합니다.
+        return obj.unique_code
+    
     def get_urls(self):
         urls = super().get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name
