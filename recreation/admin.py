@@ -132,7 +132,7 @@ def auto_generate_schedule(modeladmin, request, queryset):
 
     messages.success(request, "모든 팀의 2~6라운드 스케줄을 성공적으로 자동 생성했습니다.")
 
-@@admin.register(TeamSchedule)
+@admin.register(TeamSchedule)
 class TeamScheduleAdmin(admin.ModelAdmin):
     list_display = ('timeslot', 'team', 'room')
     list_filter = ('timeslot', 'team', 'room')
