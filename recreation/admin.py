@@ -137,10 +137,8 @@ class TeamScheduleAdmin(admin.ModelAdmin):
     list_display = ('timeslot', 'team', 'room')
     list_filter = ('timeslot', 'team', 'room')
 
-    # [핵심 수정 1] 기존 actions 설정을 삭제하고, 커스텀 템플릿을 지정합니다.
     change_list_template = "admin/recreation/teamschedule/change_list.html"
 
-    # [핵심 수정 2] 커스텀 버튼이 클릭했을 때 호출할 URL과 함수를 정의합니다.
     def get_urls(self):
         urls = super().get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -157,35 +155,41 @@ class TeamScheduleAdmin(admin.ModelAdmin):
     def auto_generate_schedule_view(self, request):
         teams = list(GameTeam.objects.all())
         rooms = list(GameRoom.objects.exclude(name__icontains='강당'))
-        timeslots = list(GameTimeSlot.objects.filter(round_number__in=[2, 3, 4, 5, 6]))
+        timeslots = list(GameTimeSlot.objects.filter(round_number__in=[2, 3, 4, 5, 6]).order_by('round_number'))
 
         if len(teams) != 16 or len(rooms) != 16:
             self.message_user(request, f"오류: 16개 팀과 16개 방('강당' 제외)이 정확히 등록되어야 합니다. (현재 팀: {len(teams)}개, 방: {len(rooms)}개)", messages.ERROR)
             return HttpResponseRedirect("../")
 
-        TeamSchedule.objects.all().delete()
+        TeamSchedule.objects.filter(timeslot__in=timeslots).delete()
 
         try:
             auditorium = GameRoom.objects.get(name__icontains='강당')
             round1_slot = GameTimeSlot.objects.get(round_number=1)
             round7_slot = GameTimeSlot.objects.get(round_number=7)
             for team in teams:
-                TeamSchedule.objects.create(team=team, timeslot=round1_slot, room=auditorium)
-                TeamSchedule.objects.create(team=team, timeslot=round7_slot, room=auditorium)
+                TeamSchedule.objects.update_or_create(team=team, timeslot=round1_slot, defaults={'room': auditorium})
+                TeamSchedule.objects.update_or_create(team=team, timeslot=round7_slot, defaults={'room': auditorium})
         except (GameRoom.DoesNotExist, GameTimeSlot.DoesNotExist):
             self.message_user(request, "오류: '강당'이라는 이름의 방과 1, 7라운드 시간이 등록되어 있어야 합니다.", messages.ERROR)
             return HttpResponseRedirect("../")
 
-        for timeslot in timeslots:
-            shuffled_teams = list(teams)
-            random.shuffle(shuffled_teams)
+        # --- [핵심 수정] 팀이 같은 방을 다시 방문하지 않도록 스케줄 생성 알고리즘 변경 ---
+        shuffled_rooms = list(rooms)
+        random.shuffle(shuffled_rooms)
 
-            shuffled_rooms = list(rooms)
-            random.shuffle(shuffled_rooms)
+        num_teams = len(teams)
+        num_rounds = len(timeslots)
 
-            for i in range(len(teams)):
-                team = shuffled_teams[i]
-                room = shuffled_rooms[i]
+        for i in range(num_teams):
+            team = teams[i]
+            # 각 팀의 방 배정 순서는 시작점을 다르게 하여 순환시킵니다.
+            # 이렇게 하면 각 팀은 5라운드 동안 서로 다른 5개의 방을 방문하게 됩니다.
+            team_room_schedule = [shuffled_rooms[(i + j) % num_teams] for j in range(num_rounds)]
+
+            for j in range(num_rounds):
+                timeslot = timeslots[j]
+                room = team_room_schedule[j]
                 TeamSchedule.objects.create(team=team, timeslot=timeslot, room=room)
 
         self.message_user(request, "모든 팀의 2~6라운드 스케줄을 성공적으로 자동 생성했습니다.", messages.SUCCESS)
