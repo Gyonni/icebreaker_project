@@ -22,12 +22,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # 기존 profiles 앱의 주소는 '/profiles/' 로 변경
     path('profiles/', include('profiles.urls')),
-    # 최상위 주소('')는 새로 만든 main 앱이 담당하도록 추가
-    path('', include('core.urls')),
     path('prayers/', include('prayerboard.urls')),
     path('recreation/', include('recreation.urls')),
+    path('', include('core.urls')),
 ]
 
 if settings.DEBUG:

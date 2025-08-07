@@ -33,12 +33,9 @@ class GameRoomAdmin(admin.ModelAdmin):
     readonly_fields = ('qr_code_id',)
 
     def view_qr_code(self, obj):
-        # 'recreation' 앱의 'urls.py'에 'play_game'이라는 이름의 URL이 정의되어 있어야 합니다.
-        try:
-            url = reverse('recreation:play_game', args=[obj.qr_code_id])
-            return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
-        except Exception:
-            return "URL 설정 필요"
+        # 이제 'recreation:play_game' URL을 정상적으로 찾을 수 있습니다.
+        url = reverse('recreation:play_game', args=[obj.qr_code_id])
+        return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
     view_qr_code.short_description = "게임 QR 코드"
 
 @admin.register(GameProblem)
