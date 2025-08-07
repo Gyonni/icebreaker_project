@@ -25,5 +25,5 @@ def create_initial_data(apps, schema_editor):
         )
 
 class Migration(migrations.Migration):
-    dependencies = [('recreation', '0001_initial'),]
+    dependencies = []
     operations = [migrations.RunPython(create_initial_data),]
