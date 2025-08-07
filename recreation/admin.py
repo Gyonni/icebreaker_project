@@ -34,17 +34,23 @@ class GameRoomAdmin(admin.ModelAdmin):
 
     def view_qr_code(self, obj):
         # 'recreation' 앱의 'urls.py'에 'play_game'이라는 이름의 URL이 정의되어 있어야 합니다.
-        url = reverse('recreation:play_game', args=[obj.qr_code_id])
-        return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
+        try:
+            url = reverse('recreation:play_game', args=[obj.qr_code_id])
+            return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
+        except Exception:
+            return "URL 설정 필요"
     view_qr_code.short_description = "게임 QR 코드"
 
 @admin.register(GameProblem)
 class GameProblemAdmin(admin.ModelAdmin):
     list_display = ('round_number', 'question', 'answer', 'points')
     list_editable = ('question', 'answer', 'points')
+    ordering = ['round_number']
 
 @admin.register(GameTimeSlot)
 class GameTimeSlotAdmin(admin.ModelAdmin):
+    list_display = ('round_number', 'start_time', 'end_time')
+    ordering = ['round_number']
     change_list_template = "admin/recreation/gametimeslot/change_list.html"
 
     def get_urls(self):
