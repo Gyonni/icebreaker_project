@@ -3,13 +3,12 @@ from django.db import migrations
 def create_initial_data(apps, schema_editor):
     GameRoom = apps.get_model('recreation', 'GameRoom')
     GameProblem = apps.get_model('recreation', 'GameProblem')
-    GameRoom.objects.all().delete() # 기존 방 데이터를 초기화
-    GameProblem.objects.all().delete() # 기존 문제 데이터를 초기화
+    GameRoom.objects.all().delete()
+    GameProblem.objects.all().delete()
     GameRoom.objects.get_or_create(name='강당')
     for i in range(1, 17):
         GameRoom.objects.get_or_create(name=f'미션방 {i}')
 
-    # 7개 예시 문제 생성 (이전과 동일)
     problems_data = [
         {'round': 1, 'q': '우리의 연합 수련회 이름은?', 'a': 'JESUS VISION', 'p': 10},
         {'round': 2, 'q': '성경에서 가장 먼저 나오는 동물의 이름은?', 'a': '뱀', 'p': 20},
@@ -26,11 +25,5 @@ def create_initial_data(apps, schema_editor):
         )
 
 class Migration(migrations.Migration):
-
-    dependencies = [
-        ('recreation', '0001_initial'),
-    ]
-
-    operations = [
-        migrations.RunPython(create_initial_data),
-    ]
+    dependencies = [('recreation', '0001_initial'),]
+    operations = [migrations.RunPython(create_initial_data),]
