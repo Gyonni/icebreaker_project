@@ -7,12 +7,12 @@ def create_initial_data(apps, schema_editor):
     GameRoom = apps.get_model('recreation', 'GameRoom')
     GameProblem = apps.get_model('recreation', 'GameProblem')
 
-    # 16개 방 생성 (강당 1개 + 미션방 15개)
+    # [수정] 17개 방 생성 (강당 1개 + 미션방 16개)
     GameRoom.objects.get_or_create(name='강당')
-    for i in range(1, 16):
+    for i in range(1, 17): # 15 -> 16으로 변경
         GameRoom.objects.get_or_create(name=f'미션방 {i}')
 
-    # 7개 예시 문제 생성
+    # 7개 예시 문제 생성 (이전과 동일)
     problems_data = [
         {'round': 1, 'q': '우리의 연합 수련회 이름은?', 'a': 'JESUS VISION', 'p': 10},
         {'round': 2, 'q': '성경에서 가장 먼저 나오는 동물의 이름은?', 'a': '뱀', 'p': 20},

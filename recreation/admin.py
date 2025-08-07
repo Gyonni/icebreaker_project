@@ -137,10 +137,8 @@ class TeamScheduleAdmin(admin.ModelAdmin):
     list_display = ('timeslot', 'team', 'room')
     list_filter = ('timeslot', 'team', 'room')
 
-    # [핵심 수정 1] 기존 actions 설정을 삭제하고, 커스텀 템플릿을 지정합니다.
     change_list_template = "admin/recreation/teamschedule/change_list.html"
 
-    # [핵심 수정 2] 커스텀 버튼이 클릭했을 때 호출할 URL과 함수를 정의합니다.
     def get_urls(self):
         urls = super().get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name
@@ -153,14 +151,16 @@ class TeamScheduleAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    @transaction.atomic
     def auto_generate_schedule_view(self, request):
-        # 이 함수는 버튼 클릭 시 실행될 로직입니다.
         teams = list(GameTeam.objects.all())
+        # [수정] 16개의 미션방을 가져옵니다.
         rooms = list(GameRoom.objects.exclude(name__icontains='강당'))
         timeslots = list(GameTimeSlot.objects.filter(round_number__in=[2, 3, 4, 5, 6]))
 
-        if len(teams) != 16 or len(rooms) != 15:
-            self.message_user(request, "오류: 16개 팀과 15개 방('강당' 제외)이 정확히 등록되어야 합니다.", messages.ERROR)
+        # [수정] 16개 팀과 16개 방이 있는지 확인합니다.
+        if len(teams) != 16 or len(rooms) != 16:
+            self.message_user(request, f"오류: 16개 팀과 16개 방('강당' 제외)이 정확히 등록되어야 합니다. (현재 팀: {len(teams)}개, 방: {len(rooms)}개)", messages.ERROR)
             return HttpResponseRedirect("../")
 
         TeamSchedule.objects.all().delete()
@@ -176,23 +176,18 @@ class TeamScheduleAdmin(admin.ModelAdmin):
             self.message_user(request, "오류: '강당'이라는 이름의 방과 1, 7라운드 시간이 등록되어 있어야 합니다.", messages.ERROR)
             return HttpResponseRedirect("../")
 
-        num_teams = len(teams)
-        num_rooms = len(rooms)
-
+        # --- [핵심 수정] 16팀-16방 스케줄 생성 알고리즘 ---
         for timeslot in timeslots:
-            room_assignments = list(range(num_rooms))
-            random.shuffle(room_assignments)
+            shuffled_teams = list(teams)
+            random.shuffle(shuffled_teams)
 
-            for i in range(num_teams):
-                if i == 15:
-                    assigned_rooms_this_round = [room_assignments[j % num_rooms] for j in range(15)]
-                    resting_room_index = list(set(range(num_rooms)) - set(assigned_rooms_this_round))[0]
-                    room_index = resting_room_index
-                else:
-                    room_index = room_assignments[i % num_rooms]
+            shuffled_rooms = list(rooms)
+            random.shuffle(shuffled_rooms)
 
-                team = teams[i]
-                room = rooms[room_index]
+            # 16개의 팀에게 16개의 방을 하나씩 짝지어 배정합니다.
+            for i in range(len(teams)):
+                team = shuffled_teams[i]
+                room = shuffled_rooms[i]
                 TeamSchedule.objects.create(team=team, timeslot=timeslot, room=room)
 
         self.message_user(request, "모든 팀의 2~6라운드 스케줄을 성공적으로 자동 생성했습니다.", messages.SUCCESS)
