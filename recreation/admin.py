@@ -136,14 +136,74 @@ def auto_generate_schedule(modeladmin, request, queryset):
 class TeamScheduleAdmin(admin.ModelAdmin):
     list_display = ('timeslot', 'team', 'room')
     list_filter = ('timeslot', 'team', 'room')
-    actions = [auto_generate_schedule]
+
+    # [핵심 수정 1] 기존 actions 설정을 삭제하고, 커스텀 템플릿을 지정합니다.
+    change_list_template = "admin/recreation/teamschedule/change_list.html"
+
+    # [핵심 수정 2] 커스텀 버튼이 클릭했을 때 호출할 URL과 함수를 정의합니다.
+    def get_urls(self):
+        urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
+        custom_urls = [
+            path(
+                'auto-generate/', 
+                self.admin_site.admin_view(self.auto_generate_schedule_view), 
+                name='%s_%s_auto_generate' % info
+            ),
+        ]
+        return custom_urls + urls
+
+    def auto_generate_schedule_view(self, request):
+        # 이 함수는 버튼 클릭 시 실행될 로직입니다.
+        teams = list(GameTeam.objects.all())
+        rooms = list(GameRoom.objects.exclude(name__icontains='강당'))
+        timeslots = list(GameTimeSlot.objects.filter(round_number__in=[2, 3, 4, 5, 6]))
+
+        if len(teams) != 16 or len(rooms) != 15:
+            self.message_user(request, "오류: 16개 팀과 15개 방('강당' 제외)이 정확히 등록되어야 합니다.", messages.ERROR)
+            return HttpResponseRedirect("../")
+
+        TeamSchedule.objects.all().delete()
+
+        try:
+            auditorium = GameRoom.objects.get(name__icontains='강당')
+            round1_slot = GameTimeSlot.objects.get(round_number=1)
+            round7_slot = GameTimeSlot.objects.get(round_number=7)
+            for team in teams:
+                TeamSchedule.objects.create(team=team, timeslot=round1_slot, room=auditorium)
+                TeamSchedule.objects.create(team=team, timeslot=round7_slot, room=auditorium)
+        except (GameRoom.DoesNotExist, GameTimeSlot.DoesNotExist):
+            self.message_user(request, "오류: '강당'이라는 이름의 방과 1, 7라운드 시간이 등록되어 있어야 합니다.", messages.ERROR)
+            return HttpResponseRedirect("../")
+
+        num_teams = len(teams)
+        num_rooms = len(rooms)
+
+        for timeslot in timeslots:
+            room_assignments = list(range(num_rooms))
+            random.shuffle(room_assignments)
+
+            for i in range(num_teams):
+                if i == 15:
+                    assigned_rooms_this_round = [room_assignments[j % num_rooms] for j in range(15)]
+                    resting_room_index = list(set(range(num_rooms)) - set(assigned_rooms_this_round))[0]
+                    room_index = resting_room_index
+                else:
+                    room_index = room_assignments[i % num_rooms]
+
+                team = teams[i]
+                room = rooms[room_index]
+                TeamSchedule.objects.create(team=team, timeslot=timeslot, room=room)
+
+        self.message_user(request, "모든 팀의 2~6라운드 스케줄을 성공적으로 자동 생성했습니다.", messages.SUCCESS)
+        return HttpResponseRedirect("../")
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         schedule_data = {}
         teams = GameTeam.objects.order_by('team_name')
         timeslots = GameTimeSlot.objects.order_by('round_number')
-        
+
         for team in teams:
             schedule_data[team.team_name] = {}
             for timeslot in timeslots:
@@ -153,5 +213,5 @@ class TeamScheduleAdmin(admin.ModelAdmin):
         extra_context['schedule_data'] = schedule_data
         extra_context['teams'] = teams
         extra_context['timeslots'] = timeslots
-        
+
         return super().changelist_view(request, extra_context=extra_context)

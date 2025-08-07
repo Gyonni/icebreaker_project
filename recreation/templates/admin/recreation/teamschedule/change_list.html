@@ -1,5 +1,15 @@
 {% extends "admin/change_list.html" %}
-{% load recreation_extras %} <!-- [수정] 새로 만든 커스텀 필터를 불러옵니다. -->
+{% load recreation_extras %}
+
+<!-- [핵심 수정] object-tools-items 블록을 추가하여 커스텀 버튼을 만듭니다. -->
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:recreation_teamschedule_auto_generate' %}" class="addlink" style="background-color: #28a745;">
+            팀별 스케줄 자동 생성하기
+        </a>
+    </li>
+{% endblock %}
 
 {% block result_list %}
 <div class="results">
@@ -18,7 +28,6 @@
             <tr class="{% cycle 'row1' 'row2' %}">
                 <td>{{ team.team_name }}</td>
                 {% for timeslot in timeslots %}
-                <!-- [수정] 이제 get_item 필터가 정상적으로 작동합니다. -->
                 <td>{{ schedule_data|get_item:team.team_name|get_item:timeslot.round_number }}</td>
                 {% endfor %}
             </tr>
