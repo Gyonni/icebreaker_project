@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'core',
     'config',
     'prayerboard',
-    'recreation',   
+    'recreation',  
 ]
 
 MIDDLEWARE = [
