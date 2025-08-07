@@ -9,9 +9,9 @@ from .models import Person, Reaction, TmiRecommendation
 import pandas as pd
 import datetime
 import qrcode
+import random # 팀 자동 배정을 위해 추가
 from io import BytesIO
 from openpyxl.drawing.image import Image as OpenpyxlImage
-from django.db.models import F # F 객체를 import 합니다.
 
 @admin.action(description='선택된 참가자의 QR 정보를 엑셀로 내보내기')
 def export_as_excel(modeladmin, request, queryset):

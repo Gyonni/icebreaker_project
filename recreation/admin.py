@@ -1,23 +1,22 @@
 # recreation/admin.py
 from django.contrib import admin, messages
 from django.db import transaction
-from django.utils.html import format_html
-from django.urls import reverse
+from django.http import HttpResponseRedirect
+from django.urls import path
 from .models import GameTeam, GameRoom, GameProblem, GameTimeSlot, TeamSchedule
 from profiles.models import Person
 import random
+import datetime
 
 @admin.action(description='프로필 앱의 팀 목록과 동기화하기')
 def sync_teams_from_profiles(modeladmin, request, queryset):
     profile_teams = Person.objects.values_list('team', flat=True).distinct()
-
     created_count = 0
     for team_name in profile_teams:
         if team_name:
             team, created = GameTeam.objects.get_or_create(team_name=team_name)
             if created:
                 created_count += 1
-
     messages.success(request, f"{created_count}개의 새로운 팀을 동기화했습니다.")
 
 @admin.register(GameTeam)
@@ -25,18 +24,11 @@ class GameTeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'unique_code', 'score')
     readonly_fields = ('unique_code',)
     actions = [sync_teams_from_profiles]
-    ordering = ['team_name']
 
 @admin.register(GameRoom)
 class GameRoomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'qr_code_id', 'view_qr_code')
+    list_display = ('name', 'qr_code_id')
     readonly_fields = ('qr_code_id',)
-
-    def view_qr_code(self, obj):
-        # 각 방의 QR 코드를 관리자 페이지에서 바로 확인할 수 있는 링크를 생성합니다.
-        url = reverse('recreation:play_game', args=[obj.qr_code_id])
-        return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
-    view_qr_code.short_description = "게임 QR 코드"
 
 @admin.register(GameProblem)
 class GameProblemAdmin(admin.ModelAdmin):
@@ -45,11 +37,6 @@ class GameProblemAdmin(admin.ModelAdmin):
 
 @admin.register(GameTimeSlot)
 class GameTimeSlotAdmin(admin.ModelAdmin):
-    list_display = ('round_number', 'start_time', 'end_time')
-
-@admin.register(GameTimeSlot)
-class GameTimeSlotAdmin(admin.ModelAdmin):
-    # [수정] 기본 목록 대신 커스텀 설정 페이지를 보여줍니다.
     change_list_template = "admin/recreation/gametimeslot/change_list.html"
 
     def get_urls(self):
@@ -62,22 +49,13 @@ class GameTimeSlotAdmin(admin.ModelAdmin):
     def auto_setup_timeslots(self, request):
         start_time_str = request.POST.get('start_time')
         duration_min = int(request.POST.get('duration', 10))
-
         start_time = datetime.datetime.fromisoformat(start_time_str)
-
         GameTimeSlot.objects.all().delete()
-
         current_time = start_time
         for i in range(1, 8):
             end_time = current_time + datetime.timedelta(minutes=duration_min)
-            GameTimeSlot.objects.create(
-                round_number=i,
-                start_time=current_time,
-                end_time=end_time
-            )
-            # 다음 라운드 시작 시간은 이전 라운드 종료 시간
+            GameTimeSlot.objects.create(round_number=i, start_time=current_time, end_time=end_time)
             current_time = end_time
-
         messages.success(request, "7개의 모든 라운드 시간이 자동으로 설정되었습니다.")
         return HttpResponseRedirect("../")
 
