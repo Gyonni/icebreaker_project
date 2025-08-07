@@ -1,0 +1,29 @@
+{% extends "admin/change_list.html" %}
+
+{% block result_list %}
+<div class="results">
+    <h2>팀별 이동 경로표</h2>
+    <table id="result_list">
+        <thead>
+            <tr>
+                <th>팀 이름</th>
+                {% for timeslot in timeslots %}
+                <th>{{ timeslot.round_number }}라운드 ({{ timeslot.start_time|time:"H:i" }})</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in teams %}
+            <tr class="{% cycle 'row1' 'row2' %}">
+                <td>{{ team.team_name }}</td>
+                {% for timeslot in timeslots %}
+                <td>{{ schedule_data|get_item:team.team_name|get_item:timeslot.round_number }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="paginator">위 표는 참고용이며, 실제 데이터는 아래 목록에 표시됩니다.</p>
+{{ block.super }}
+{% endblock %}
