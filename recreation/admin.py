@@ -9,23 +9,39 @@ from profiles.models import Person
 import random
 import datetime
 
-@admin.action(description='프로필 앱의 팀 목록과 동기화하기')
-def sync_teams_from_profiles(modeladmin, request, queryset):
-    profile_teams = Person.objects.values_list('team', flat=True).distinct()
-    created_count = 0
-    for team_name in profile_teams:
-        if team_name:
-            team, created = GameTeam.objects.get_or_create(team_name=team_name)
-            if created:
-                created_count += 1
-    messages.success(request, f"{created_count}개의 새로운 팀을 동기화했습니다.")
-
 @admin.register(GameTeam)
 class GameTeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'unique_code', 'score')
     readonly_fields = ('unique_code',)
-    actions = [sync_teams_from_profiles]
     ordering = ['team_name']
+
+    # [핵심 수정 1] 기존 actions 설정을 삭제하고, 커스텀 템플릿을 지정합니다.
+    change_list_template = "admin/recreation/gameteam/change_list.html"
+
+    # [핵심 수정 2] 커스텀 버튼이 클릭했을 때 호출할 URL과 함수를 정의합니다.
+    def get_urls(self):
+        urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
+        custom_urls = [
+            path(
+                'sync-teams/', 
+                self.admin_site.admin_view(self.sync_teams_from_profiles), 
+                name='%s_%s_sync_teams' % info
+            ),
+        ]
+        return custom_urls + urls
+
+    def sync_teams_from_profiles(self, request):
+        profile_teams = Person.objects.values_list('team', flat=True).distinct()
+        created_count = 0
+        for team_name in profile_teams:
+            if team_name:
+                team, created = GameTeam.objects.get_or_create(team_name=team_name)
+                if created:
+                    created_count += 1
+
+        self.message_user(request, f"{created_count}개의 새로운 팀을 동기화했습니다.")
+        return HttpResponseRedirect("../")
 
 @admin.register(GameRoom)
 class GameRoomAdmin(admin.ModelAdmin):

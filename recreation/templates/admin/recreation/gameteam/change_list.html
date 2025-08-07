@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    <!-- 기존 버튼들 (추가, 필터 등)을 먼저 불러옵니다. -->
+    {{ block.super }}
+
+    <!-- [핵심 수정] 항상 보이는 커스텀 동기화 버튼을 추가합니다. -->
+    <li>
+        <a href="{% url 'admin:recreation_gameteam_sync_teams' %}" class="addlink">
+            프로필 앱의 팀 목록과 동기화하기
+        </a>
+    </li>
+{% endblock %}
