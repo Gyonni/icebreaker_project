@@ -1,13 +1,3 @@
-# recreation/admin.py
-from django.contrib import admin, messages
-from django.db import transaction
-from django.http import HttpResponseRedirect
-from django.urls import path
-from .models import GameTeam, GameRoom, GameProblem, GameTimeSlot, TeamSchedule
-from profiles.models import Person
-import random
-import datetime
-
 from django.contrib import admin, messages
 from django.db import transaction
 from django.http import HttpResponseRedirect
@@ -34,7 +24,6 @@ def sync_teams_from_profiles(modeladmin, request, queryset):
 class GameTeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'unique_code', 'score')
     readonly_fields = ('unique_code',)
-    # [수정] actions 설정을 추가하여 '작업' 메뉴를 활성화합니다.
     actions = [sync_teams_from_profiles]
     ordering = ['team_name']
 
@@ -44,6 +33,7 @@ class GameRoomAdmin(admin.ModelAdmin):
     readonly_fields = ('qr_code_id',)
 
     def view_qr_code(self, obj):
+        # 'recreation' 앱의 'urls.py'에 'play_game'이라는 이름의 URL이 정의되어 있어야 합니다.
         url = reverse('recreation:play_game', args=[obj.qr_code_id])
         return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
     view_qr_code.short_description = "게임 QR 코드"
@@ -59,8 +49,9 @@ class GameTimeSlotAdmin(admin.ModelAdmin):
 
     def get_urls(self):
         urls = super().get_urls()
+        info = self.model._meta.app_label, self.model._meta.model_name
         custom_urls = [
-            path('auto-setup/', self.admin_site.admin_view(self.auto_setup_timeslots), name='recreation_gametimeslot_auto_setup'),
+            path('auto-setup/', self.admin_site.admin_view(self.auto_setup_timeslots), name='%s_%s_auto_setup' % info),
         ]
         return custom_urls + urls
 
@@ -83,7 +74,7 @@ def auto_generate_schedule(modeladmin, request, queryset):
     teams = list(GameTeam.objects.all())
     rooms = list(GameRoom.objects.exclude(name__icontains='강당'))
     timeslots = list(GameTimeSlot.objects.filter(round_number__in=[2, 3, 4, 5, 6]))
-
+    
     if len(teams) != 16 or len(rooms) != 15:
         messages.error(request, "오류: 16개 팀과 15개 방('강당' 제외)이 정확히 등록되어야 합니다.")
         return
@@ -103,7 +94,7 @@ def auto_generate_schedule(modeladmin, request, queryset):
 
     num_teams = len(teams)
     num_rooms = len(rooms)
-
+    
     for timeslot in timeslots:
         room_assignments = list(range(num_rooms))
         random.shuffle(room_assignments)
@@ -133,7 +124,7 @@ class TeamScheduleAdmin(admin.ModelAdmin):
         schedule_data = {}
         teams = GameTeam.objects.order_by('team_name')
         timeslots = GameTimeSlot.objects.order_by('round_number')
-
+        
         for team in teams:
             schedule_data[team.team_name] = {}
             for timeslot in timeslots:
@@ -143,5 +134,5 @@ class TeamScheduleAdmin(admin.ModelAdmin):
         extra_context['schedule_data'] = schedule_data
         extra_context['teams'] = teams
         extra_context['timeslots'] = timeslots
-
+        
         return super().changelist_view(request, extra_context=extra_context)
