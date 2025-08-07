@@ -1,0 +1,23 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h1>게임 시간 자동 설정</h1>
+    <p>첫 라운드 시작 시간과 라운드별 진행 시간(분)을 입력하면, 7개의 모든 라운드 시간이 자동으로 생성됩니다.</p>
+    <form action="auto-setup/" method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 15px;">
+            <label for="start_time">1라운드 시작 시간:</label>
+            <input type="datetime-local" id="start_time" name="start_time" required>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label for="duration">라운드별 진행 시간 (분):</label>
+            <input type="number" id="duration" name="duration" value="10" min="1" required>
+        </div>
+        <button type="submit" class="button">자동 생성 및 저장</button>
+    </form>
+</div>
+
+<!-- 기존 목록도 함께 보여줍니다. -->
+{{ block.super }}
+{% endblock %}

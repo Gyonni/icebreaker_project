@@ -47,6 +47,40 @@ class GameProblemAdmin(admin.ModelAdmin):
 class GameTimeSlotAdmin(admin.ModelAdmin):
     list_display = ('round_number', 'start_time', 'end_time')
 
+@admin.register(GameTimeSlot)
+class GameTimeSlotAdmin(admin.ModelAdmin):
+    # [수정] 기본 목록 대신 커스텀 설정 페이지를 보여줍니다.
+    change_list_template = "admin/recreation/gametimeslot/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('auto-setup/', self.admin_site.admin_view(self.auto_setup_timeslots), name='auto_setup_timeslots'),
+        ]
+        return custom_urls + urls
+
+    def auto_setup_timeslots(self, request):
+        start_time_str = request.POST.get('start_time')
+        duration_min = int(request.POST.get('duration', 10))
+
+        start_time = datetime.datetime.fromisoformat(start_time_str)
+
+        GameTimeSlot.objects.all().delete()
+
+        current_time = start_time
+        for i in range(1, 8):
+            end_time = current_time + datetime.timedelta(minutes=duration_min)
+            GameTimeSlot.objects.create(
+                round_number=i,
+                start_time=current_time,
+                end_time=end_time
+            )
+            # 다음 라운드 시작 시간은 이전 라운드 종료 시간
+            current_time = end_time
+
+        messages.success(request, "7개의 모든 라운드 시간이 자동으로 설정되었습니다.")
+        return HttpResponseRedirect("../")
+
 @admin.action(description='팀별 스케줄 자동 생성하기')
 @transaction.atomic
 def auto_generate_schedule(modeladmin, request, queryset):

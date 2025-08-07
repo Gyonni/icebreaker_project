@@ -11,6 +11,7 @@ import datetime
 import qrcode
 from io import BytesIO
 from openpyxl.drawing.image import Image as OpenpyxlImage
+from django.db.models import F # F 객체를 import 합니다.
 
 @admin.action(description='선택된 참가자의 QR 정보를 엑셀로 내보내기')
 def export_as_excel(modeladmin, request, queryset):
@@ -82,7 +83,22 @@ def reset_tmi_recommendations(modeladmin, request, queryset):
     updated_count = queryset.update(tmi_recommend_count=0)
     TmiRecommendation.objects.filter(recommended__in=queryset).delete()
     messages.success(request, f"{updated_count}명의 TMI 추천수와 추천 기록을 초기화했습니다.")
+    
+@admin.action(description='선택된 참가자의 팀을 초기화')
+def reset_teams(modeladmin, request, queryset):
+    updated_count = queryset.update(team="")
+    messages.success(request, f"{updated_count}명의 팀 정보를 초기화했습니다.")
 
+@admin.action(description='선택된 참가자에게 1-16팀 자동 배정')
+def auto_assign_teams(modeladmin, request, queryset):
+    participants = list(queryset)
+    random.shuffle(participants)
+    team_count = 16
+    for i, person in enumerate(participants):
+        person.team = f"{(i % team_count) + 1}팀"
+        person.save()
+    messages.success(request, f"{len(participants)}명에게 1-16팀을 자동으로 배정했습니다.")
+    
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
     list_display = (
@@ -98,11 +114,9 @@ class PersonAdmin(admin.ModelAdmin):
     list_filter = ('group', 'team', 'is_authenticated')
     search_fields = ('name', 'team', 'unique_code')
     actions = [
-        reset_authentication, 
-        reset_scanned_people, 
-        export_as_excel, 
-        reset_emoji_counts, 
-        reset_tmi_recommendations
+        reset_authentication, reset_scanned_people, 
+        export_as_excel, reset_emoji_counts, reset_tmi_recommendations,
+        reset_teams, auto_assign_teams # [수정] 새로운 액션 추가
     ]
     change_list_template = "admin/profiles/person/change_list.html"
 
@@ -206,3 +220,4 @@ class TmiRecommendationAdmin(admin.ModelAdmin):
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
+
