@@ -1,15 +1,12 @@
 from django.db import migrations
 
 def create_initial_data(apps, schema_editor):
-    """
-    초기 게임 데이터(방, 문제)를 생성하는 함수입니다.
-    """
     GameRoom = apps.get_model('recreation', 'GameRoom')
     GameProblem = apps.get_model('recreation', 'GameProblem')
-
-    # [수정] 17개 방 생성 (강당 1개 + 미션방 16개)
+    GameRoom.objects.all().delete() # 기존 방 데이터를 초기화
+    GameProblem.objects.all().delete() # 기존 문제 데이터를 초기화
     GameRoom.objects.get_or_create(name='강당')
-    for i in range(1, 17): # 15 -> 16으로 변경
+    for i in range(1, 17):
         GameRoom.objects.get_or_create(name=f'미션방 {i}')
 
     # 7개 예시 문제 생성 (이전과 동일)
