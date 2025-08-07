@@ -8,6 +8,17 @@ from profiles.models import Person
 import random
 import datetime
 
+from django.contrib import admin, messages
+from django.db import transaction
+from django.http import HttpResponseRedirect
+from django.urls import path
+from django.utils.html import format_html
+from django.urls import reverse
+from .models import GameTeam, GameRoom, GameProblem, GameTimeSlot, TeamSchedule
+from profiles.models import Person
+import random
+import datetime
+
 @admin.action(description='프로필 앱의 팀 목록과 동기화하기')
 def sync_teams_from_profiles(modeladmin, request, queryset):
     profile_teams = Person.objects.values_list('team', flat=True).distinct()
@@ -23,12 +34,19 @@ def sync_teams_from_profiles(modeladmin, request, queryset):
 class GameTeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'unique_code', 'score')
     readonly_fields = ('unique_code',)
+    # [수정] actions 설정을 추가하여 '작업' 메뉴를 활성화합니다.
     actions = [sync_teams_from_profiles]
+    ordering = ['team_name']
 
 @admin.register(GameRoom)
 class GameRoomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'qr_code_id')
+    list_display = ('name', 'qr_code_id', 'view_qr_code')
     readonly_fields = ('qr_code_id',)
+
+    def view_qr_code(self, obj):
+        url = reverse('recreation:play_game', args=[obj.qr_code_id])
+        return format_html(f'<a href="{url}" target="_blank">QR 코드 보기/테스트</a>')
+    view_qr_code.short_description = "게임 QR 코드"
 
 @admin.register(GameProblem)
 class GameProblemAdmin(admin.ModelAdmin):
@@ -42,7 +60,7 @@ class GameTimeSlotAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('auto-setup/', self.admin_site.admin_view(self.auto_setup_timeslots), name='auto_setup_timeslots'),
+            path('auto-setup/', self.admin_site.admin_view(self.auto_setup_timeslots), name='recreation_gametimeslot_auto_setup'),
         ]
         return custom_urls + urls
 
