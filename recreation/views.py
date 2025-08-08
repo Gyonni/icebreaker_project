@@ -11,22 +11,28 @@ import random
 
 def play_game_view(request, qr_code_id):
     room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
+    
     if request.method == 'POST':
         team_code = request.POST.get('unique_code')
         if not team_code:
             messages.error(request, "팀 고유번호를 입력해주세요.")
             return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
         try:
             team = GameTeam.objects.get(unique_code=team_code)
         except GameTeam.DoesNotExist:
             messages.error(request, f"'{team_code}'는 유효하지 않은 고유번호입니다.")
             return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
         now = timezone.now()
         current_timeslot = GameTimeSlot.objects.filter(start_time__lte=now, end_time__gte=now).first()
+
         if not current_timeslot:
             messages.error(request, "현재 진행 중인 게임 라운드가 없습니다.")
             return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
         schedule = TeamSchedule.objects.filter(team=team, timeslot=current_timeslot).first()
+
         if not schedule or schedule.room != room:
             correct_room_schedule = TeamSchedule.objects.filter(team=team, timeslot=current_timeslot).first()
             if correct_room_schedule:
@@ -34,11 +40,19 @@ def play_game_view(request, qr_code_id):
             else:
                 messages.error(request, "스케줄 정보를 찾을 수 없습니다. 운영진에게 문의해주세요.")
             return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
         problem = get_object_or_404(GameProblem, round_number=current_timeslot.round_number)
-        context = {'team': team, 'room': room, 'problem': problem, 'timeslot': current_timeslot}
+        context = {
+            'team': team,
+            'room': room,
+            'problem': problem,
+            'timeslot': current_timeslot,
+        }
         return render(request, 'recreation/play_problem.html', context)
+
     context = {'room': room}
     return render(request, 'recreation/play_auth.html', context)
+
 
 def submit_answer_view(request, qr_code_id):
     if request.method == 'POST':
@@ -48,8 +62,8 @@ def submit_answer_view(request, qr_code_id):
 
         team = get_object_or_404(GameTeam, id=team_id)
         problem = get_object_or_404(GameProblem, id=problem_id)
-        room = get_object_or_404(GameRoom, qr_code_id=qr_code_id) # [수정] '다시 풀기'를 위해 room 정보 추가
-
+        room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
+        
         now = timezone.now()
         current_timeslot = get_object_or_404(GameTimeSlot, round_number=problem.round_number)
 
@@ -75,18 +89,17 @@ def submit_answer_view(request, qr_code_id):
                 next_location = f"다음 장소는 '{next_schedule.room.name}' 입니다. 서둘러 이동해주세요!"
             except (GameTimeSlot.DoesNotExist, TeamSchedule.DoesNotExist):
                 next_location = "다음 장소를 찾을 수 없습니다. 운영진에게 문의해주세요."
-
+        
         context = {
             'result_message': result_message,
             'is_correct': is_correct,
             'is_timeout': is_timeout,
             'next_location': next_location,
-            'room': room, # '다시 풀기' 버튼에서 사용할 room 정보
+            'room': room,
         }
         return render(request, 'recreation/play_result.html', context)
-
+    
     return redirect('recreation:play_game', qr_code_id=qr_code_id)
-
 
 def generate_room_qr(request, qr_code_id):
     play_game_url = request.build_absolute_uri(
@@ -96,3 +109,11 @@ def generate_room_qr(request, qr_code_id):
     buffer = BytesIO()
     img.save(buffer, format='PNG')
     return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+# --- [핵심 수정] 누락되었던 점수판 관련 함수들을 추가합니다. ---
+def scoreboard_view(request):
+    return render(request, 'recreation/scoreboard.html')
+
+def get_scores_api(request):
+    teams = GameTeam.objects.order_by('-score', 'team_name').values('team_name', 'score')
+    return JsonResponse(list(teams), safe=False)
