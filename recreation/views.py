@@ -52,7 +52,7 @@ def play_game_view(request, qr_code_id):
     return render(request, 'recreation/play_auth.html', context)
 
 
-def submit_answer_view(request, qr_code_id):
+ddef submit_answer_view(request, qr_code_id):
     if request.method == 'POST':
         team_id = request.POST.get('team_id')
         problem_id = request.POST.get('problem_id')
