@@ -1,7 +1,17 @@
 {% extends "admin/change_list.html" %}
 {% load recreation_extras %}
+{% load static %}
 
-<!-- [핵심 수정] object-tools-items 블록을 추가하여 커스텀 버튼을 만듭니다. -->
+<!-- [핵심 수정] 관리자 페이지의 기본 CSS를 불러오는 코드를 추가합니다. -->
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/changelists.css' %}">
+    <style>
+        #result_list { width: 100%; }
+        #result_list th, #result_list td { text-align: center; padding: 8px; }
+    </style>
+{% endblock %}
+
 {% block object-tools-items %}
     {{ block.super }}
     <li>
@@ -35,6 +45,6 @@
         </tbody>
     </table>
 </div>
-<p class="paginator">위 표는 참고용이며, 실제 데이터는 아래 목록에 표시됩니다.</p>
+<p class="paginator" style="margin-top: 1rem;">위 표는 참고용이며, 실제 데이터는 아래 목록에 표시됩니다.</p>
 {{ block.super }}
 {% endblock %}
