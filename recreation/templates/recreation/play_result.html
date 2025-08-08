@@ -14,19 +14,18 @@
 
     <p class="text-lg text-gray-700 bg-gray-100 p-4 rounded-lg">{{ result_message }}</p>
 
-    <!-- [핵심 수정] 7라운드 여부에 따라 다른 안내를 보여줍니다. -->
-    {% if is_final_round %}
-        <div class="mt-8 p-4 bg-yellow-100 border-2 border-yellow-300 rounded-lg">
-            <h2 class="text-xl font-bold text-yellow-800">MISSION COMPLETE!</h2>
-            <p class="mt-2 text-yellow-700 text-lg">
-                {{ completion_message|default:"모든 미션을 완료했습니다! 최종 점수를 확인하고 강당으로 모여주세요." }}
-            </p>
-            <p class="mt-4 text-2xl font-bold">우리 팀 최종 점수: {{ team.score }}점</p>
+    {% if is_correct or is_timeout %}
+        <div class="mt-4 p-4 bg-yellow-100 border-2 border-yellow-300 rounded-lg">
+            <h2 class="text-xl font-bold text-yellow-800">미션 완료!</h2>
+            <p class="mt-2 text-yellow-700 text-lg">{{ completion_message|default:"수고하셨습니다!" }}</p>
         </div>
-    {% elif is_correct or is_timeout %}
-        <div class="mt-8 p-4 bg-purple-100 border-2 border-purple-300 rounded-lg">
+        <div id="next-location-container" class="mt-8 p-4 bg-purple-100 border-2 border-purple-300 rounded-lg">
             <h2 class="text-xl font-bold text-purple-800">다음 안내</h2>
-            <p class="mt-2 text-purple-700 text-lg">{{ next_location }}</p>
+            <div id="next-location-content" class="mt-2 text-purple-700 text-lg">
+                <!-- 타이머가 끝나면 여기에 다음 장소가 표시됩니다. -->
+                <p>타이머가 끝나면 다음 장소가 공개됩니다...</p>
+                <div class="mt-2 text-2xl font-semibold bg-gray-600 text-white px-4 py-2 rounded-full inline-block" id="timer">--:--</div>
+            </div>
         </div>
     {% else %}
         <form action="{% url 'recreation:play_game' room.qr_code_id %}" method="POST">
@@ -38,4 +37,42 @@
         </form>
     {% endif %}
 </div>
+
+{% if is_correct or is_timeout %}
+<script>
+    const endTime = new Date("{{ timeslot.end_time.isoformat }}").getTime();
+    const timerEl = document.getElementById('timer');
+    const nextLocationContent = document.getElementById('next-location-content');
+    const teamId = "{{ team.id }}";
+    const currentRound = "{{ timeslot.round_number }}";
+
+    async function fetchNextLocation() {
+        try {
+            const response = await fetch(`/recreation/api/next-location/${teamId}/${currentRound}/`);
+            const data = await response.json();
+            nextLocationContent.innerHTML = `<p>${data.next_location}</p>`;
+        } catch (error) {
+            nextLocationContent.innerHTML = '<p>다음 장소를 불러오는 데 실패했습니다.</p>';
+        }
+    }
+
+    function updateTimer() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+
+        if (distance < 0) {
+            clearInterval(timerInterval);
+            fetchNextLocation();
+            return;
+        }
+
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} 남음`;
+    }
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+</script>
+{% endif %}
 {% endblock %}

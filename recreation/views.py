@@ -62,6 +62,7 @@ def submit_answer_view(request, qr_code_id):
         problem = get_object_or_404(GameProblem, id=problem_id)
         room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
 
+
         now = timezone.now()
         current_timeslot = get_object_or_404(GameTimeSlot, round_number=problem.round_number)
 
@@ -72,8 +73,8 @@ def submit_answer_view(request, qr_code_id):
         if is_timeout:
             result_message = "시간 초과입니다! 아쉽지만 점수를 얻지 못했습니다."
         elif problem.answer.lower() == submitted_answer.lower():
-            # [수정] 이미 푼 문제에 대해 중복 점수 획득 방지 로직 추가 (선택사항이지만 권장)
-            # 이 부분은 추후 더 정교하게 만들 수 있습니다.
+            # 간단한 중복 점수 방지 (한번 맞히면 점수 더 안 오름)
+            # 이전에 이 팀이 이 문제를 맞혔는지 확인하는 로직이 필요 (추후 구현 가능)
             team.score += problem.points
             team.save()
             result_message = f"정답입니다! {problem.points}점을 획득했습니다!"
@@ -81,32 +82,35 @@ def submit_answer_view(request, qr_code_id):
         else:
             result_message = "땡! 아쉽지만 정답이 아닙니다. 다시 한번 생각해보세요!"
 
-        # --- [핵심 수정] 7라운드인지 확인하는 로직 ---
-        is_final_round = current_timeslot.round_number == 7
-        next_location = ""
-
-        if not is_final_round:
-            # 7라운드가 아닐 때만 다음 장소를 안내합니다.
-            try:
-                next_timeslot = GameTimeSlot.objects.get(round_number=current_timeslot.round_number + 1)
-                next_schedule = TeamSchedule.objects.get(team=team, timeslot=next_timeslot)
-                next_location = f"다음 장소는 '{next_schedule.room.name}' 입니다. 서둘러 이동해주세요!"
-            except (GameTimeSlot.DoesNotExist, TeamSchedule.DoesNotExist):
-                next_location = "다음 장소를 찾을 수 없습니다. 운영진에게 문의해주세요."
-
         context = {
             'result_message': result_message,
             'is_correct': is_correct,
             'is_timeout': is_timeout,
-            'next_location': next_location,
             'room': room,
             'team': team,
-            'is_final_round': is_final_round, # 7라운드 여부 전달
-            'completion_message': problem.completion_message, # 완료 메시지 전달
+            'timeslot': current_timeslot,
+            'completion_message': problem.completion_message,
         }
         return render(request, 'recreation/play_result.html', context)
 
     return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
+# --- [새로운 기능] 다음 장소 정보를 JSON으로 전달하는 API 뷰 ---
+def get_next_location_api(request, team_id, current_round):
+    team = get_object_or_404(GameTeam, id=team_id)
+    next_round_number = current_round + 1
+
+    if next_round_number > 7:
+        next_location = "모든 라운드가 종료되었습니다. 강당으로 모여주세요!"
+    else:
+        try:
+            next_timeslot = GameTimeSlot.objects.get(round_number=next_round_number)
+            next_schedule = TeamSchedule.objects.get(team=team, timeslot=next_timeslot)
+            next_location = f"다음 장소는 '{next_schedule.room.name}' 입니다. 서둘러 이동해주세요!"
+        except (GameTimeSlot.DoesNotExist, TeamSchedule.DoesNotExist):
+            next_location = "다음 장소를 찾을 수 없습니다. 운영진에게 문의해주세요."
+
+    return JsonResponse({'next_location': next_location})
 
 def generate_room_qr(request, qr_code_id):
     play_game_url = request.build_absolute_uri(

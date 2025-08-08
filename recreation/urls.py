@@ -17,4 +17,7 @@ urlpatterns = [
     # --- [새로운 기능] 실시간 점수판을 위한 URL 추가 ---    
     path('scoreboard/', views.scoreboard_view, name='scoreboard'),
     path('api/scores/', views.get_scores_api, name='get_scores_api'),
+    
+    # --- [새로운 기능] 다음 장소 정보를 가져오는 API URL ---
+    path('api/next-location/<int:team_id>/<int:current_round>/', views.get_next_location_api, name='get_next_location_api'),
 ]
