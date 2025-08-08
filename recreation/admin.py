@@ -60,7 +60,6 @@ class GameRoomAdmin(admin.ModelAdmin):
     test_game_page.short_description = "게임 페이지"
 
 @admin.register(GameProblem)
-@admin.register(GameProblem)
 class GameProblemAdmin(admin.ModelAdmin):
     # [수정] list_display에 completion_message를 추가합니다.
     list_display = ('round_number', 'question', 'answer', 'points', 'completion_message')
