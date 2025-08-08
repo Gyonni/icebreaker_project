@@ -45,18 +45,17 @@ class GameTeamAdmin(admin.ModelAdmin):
 
 @admin.register(GameRoom)
 class GameRoomAdmin(admin.ModelAdmin):
-    # [수정] list_display에 두 개의 새로운 함수를 추가합니다.
     list_display = ('name', 'qr_code_id', 'view_qr_code_image', 'test_game_page')
     readonly_fields = ('qr_code_id',)
 
-    # [수정] 1. QR 코드 이미지만 보여주는 링크를 생성하는 함수
     def view_qr_code_image(self, obj):
+        # 이제 'recreation:generate_room_qr' URL을 정상적으로 찾을 수 있습니다.
         url = reverse('recreation:generate_room_qr', args=[obj.qr_code_id])
         return format_html(f'<a href="{url}" target="_blank">QR 코드 보기</a>')
     view_qr_code_image.short_description = "QR 코드 (인쇄용)"
 
-    # [수정] 2. 실제 게임 페이지로 연결되는 테스트 링크를 생성하는 함수
     def test_game_page(self, obj):
+        # 'recreation:play_game' URL도 정상적으로 찾을 수 있습니다.
         url = reverse('recreation:play_game', args=[obj.qr_code_id])
         return format_html(f'<a href="{url}" target="_blank">테스트</a>')
     test_game_page.short_description = "게임 페이지"
