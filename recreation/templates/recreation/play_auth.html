@@ -1,0 +1,12 @@
+{% extends "recreation/base.html" %}
+{% block content %}
+<h1 class="text-3xl font-bold text-center">팀 인증</h1>
+<p class="text-center text-gray-600 mt-2">현재 위치: <span class="font-semibold">{{ room.name }}</span></p>
+<p class="text-center text-gray-600 mt-4">안내받은 4자리 팀 고유번호를 입력해주세요.</p>
+
+<form method="POST" class="mt-8 space-y-6">
+    {% csrf_token %}
+    <input type="text" name="unique_code" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" class="w-full text-center text-3xl p-4 border-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="XXXX" required>
+    <button type="submit" class="w-full bg-purple-600 text-white font-bold py-4 rounded-lg hover:bg-purple-700 transition-colors">인증하기</button>
+</form>
+{% endblock %}

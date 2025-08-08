@@ -1,0 +1,53 @@
+{% extends "recreation/base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-2xl font-bold">라운드 {{ problem.round_number }}</h1>
+    <div class="mt-2 text-lg font-semibold bg-red-500 text-white px-4 py-2 rounded-full inline-block" id="timer">--:--</div>
+</div>
+
+<div class="mt-6 space-y-4">
+    {% if problem.story %}
+    <div class="bg-gray-100 p-4 rounded-lg">
+        <h2 class="font-bold text-gray-700">STORY</h2>
+        <p class="mt-2 text-gray-600">{{ problem.story|linebreaksbr }}</p>
+    </div>
+    {% endif %}
+    <div class="bg-yellow-100 p-4 rounded-lg border-2 border-yellow-300">
+        <h2 class="font-bold text-yellow-800">QUESTION</h2>
+        <p class="mt-2 text-yellow-900 text-lg">{{ problem.question|linebreaksbr }}</p>
+    </div>
+</div>
+
+<form action="{% url 'recreation:submit_answer' room.qr_code_id %}" method="POST" class="mt-8 space-y-4">
+    {% csrf_token %}
+    <input type="hidden" name="team_id" value="{{ team.id }}">
+    <input type="hidden" name="problem_id" value="{{ problem.id }}">
+    <input type="text" name="answer" class="w-full text-center text-xl p-3 border-2 rounded-lg" placeholder="정답을 입력하세요" required>
+    <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 rounded-lg">정답 제출</button>
+</form>
+
+<script>
+    const endTime = new Date("{{ timeslot.end_time.isoformat }}").getTime();
+    const timerEl = document.getElementById('timer');
+
+    function updateTimer() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+
+        if (distance < 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = "시간 종료!";
+            // 시간이 종료되면 자동으로 제출 폼을 비활성화할 수 있습니다.
+            document.querySelector('form button').disabled = true;
+            return;
+        }
+
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} 남음`;
+    }
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+</script>
+{% endblock %}
