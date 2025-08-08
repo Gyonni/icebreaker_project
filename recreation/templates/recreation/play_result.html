@@ -4,16 +4,25 @@
     {% if is_correct %}
         <div class="text-6xl">🎉</div>
         <h1 class="text-3xl font-bold text-green-600">정답입니다!</h1>
+    {% elif is_timeout %}
+        <div class="text-6xl">⏰</div>
+        <h1 class="text-3xl font-bold text-orange-500">시간 종료!</h1>
     {% else %}
-        <div class="text-6xl">😭</div>
-        <h1 class="text-3xl font-bold text-red-500">결과 안내</h1>
+        <div class="text-6xl">🤔</div>
+        <h1 class="text-3xl font-bold text-red-500">오답입니다!</h1>
     {% endif %}
 
     <p class="text-lg text-gray-700 bg-gray-100 p-4 rounded-lg">{{ result_message }}</p>
 
-    <div class="mt-8 p-4 bg-purple-100 border-2 border-purple-300 rounded-lg">
-        <h2 class="text-xl font-bold text-purple-800">다음 안내</h2>
-        <p class="mt-2 text-purple-700 text-lg">{{ next_location }}</p>
-    </div>
+    {% if is_correct or is_timeout %}
+        <div class="mt-8 p-4 bg-purple-100 border-2 border-purple-300 rounded-lg">
+            <h2 class="text-xl font-bold text-purple-800">다음 안내</h2>
+            <p class="mt-2 text-purple-700 text-lg">{{ next_location }}</p>
+        </div>
+    {% else %}
+        <a href="{% url 'recreation:play_game' room.qr_code_id %}" class="w-full block bg-yellow-400 text-yellow-900 font-bold py-3 rounded-lg hover:bg-yellow-300 transition-colors">
+            다시 풀어보기
+        </a>
+    {% endif %}
 </div>
 {% endblock %}

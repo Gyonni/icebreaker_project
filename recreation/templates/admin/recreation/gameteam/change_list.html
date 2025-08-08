@@ -1,17 +1,16 @@
 {% extends "admin/change_list.html" %}
-{% load static %}
-
-<!-- [핵심 수정] 관리자 페이지의 기본 CSS를 불러오는 코드를 추가합니다. -->
-{% block extrastyle %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/changelists.css' %}">
-{% endblock %}
 
 {% block object-tools-items %}
     {{ block.super }}
     <li>
         <a href="{% url 'admin:recreation_gameteam_sync_teams' %}" class="addlink">
-            프로필 앱의 팀 목록과 동기화하기
+            팀 목록 동기화
+        </a>
+    </li>
+    <!-- [새로운 기능] 실시간 점수판 보기 버튼 -->
+    <li>
+        <a href="{% url 'recreation:scoreboard' %}" target="_blank" class="addlink" style="background-color: #007bff;">
+            실시간 점수판 보기
         </a>
     </li>
 {% endblock %}

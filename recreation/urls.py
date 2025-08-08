@@ -13,4 +13,8 @@ urlpatterns = [
 
     # 3. QR 코드 이미지만 보여주는 페이지 (관리자용)
     path('room-qr/<uuid:qr_code_id>/', views.generate_room_qr, name='generate_room_qr'),
+    
+    # --- [새로운 기능] 실시간 점수판을 위한 URL 추가 ---    
+    path('scoreboard/', views.scoreboard_view, name='scoreboard'),
+    path('api/scores/', views.get_scores_api, name='get_scores_api'),
 ]

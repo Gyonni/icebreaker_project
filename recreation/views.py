@@ -45,13 +45,19 @@ def submit_answer_view(request, qr_code_id):
         team_id = request.POST.get('team_id')
         problem_id = request.POST.get('problem_id')
         submitted_answer = request.POST.get('answer', '').strip()
+
         team = get_object_or_404(GameTeam, id=team_id)
         problem = get_object_or_404(GameProblem, id=problem_id)
+        room = get_object_or_404(GameRoom, qr_code_id=qr_code_id) # [수정] '다시 풀기'를 위해 room 정보 추가
+
         now = timezone.now()
         current_timeslot = get_object_or_404(GameTimeSlot, round_number=problem.round_number)
+
         result_message = ""
         is_correct = False
-        if now > current_timeslot.end_time:
+        is_timeout = now > current_timeslot.end_time
+
+        if is_timeout:
             result_message = "시간 초과입니다! 아쉽지만 점수를 얻지 못했습니다."
         elif problem.answer.lower() == submitted_answer.lower():
             team.score += problem.points
@@ -59,19 +65,28 @@ def submit_answer_view(request, qr_code_id):
             result_message = f"정답입니다! {problem.points}점을 획득했습니다!"
             is_correct = True
         else:
-            result_message = "땡! 아쉽지만 정답이 아닙니다."
-        next_round_number = current_timeslot.round_number + 1
+            result_message = "땡! 아쉽지만 정답이 아닙니다. 다시 한번 생각해보세요!"
+
         next_location = "모든 라운드가 종료되었습니다. 강당으로 모여주세요!"
-        if next_round_number <= 7:
+        if current_timeslot.round_number < 7:
             try:
-                next_timeslot = GameTimeSlot.objects.get(round_number=next_round_number)
+                next_timeslot = GameTimeSlot.objects.get(round_number=current_timeslot.round_number + 1)
                 next_schedule = TeamSchedule.objects.get(team=team, timeslot=next_timeslot)
                 next_location = f"다음 장소는 '{next_schedule.room.name}' 입니다. 서둘러 이동해주세요!"
             except (GameTimeSlot.DoesNotExist, TeamSchedule.DoesNotExist):
                 next_location = "다음 장소를 찾을 수 없습니다. 운영진에게 문의해주세요."
-        context = {'result_message': result_message, 'is_correct': is_correct, 'next_location': next_location}
+
+        context = {
+            'result_message': result_message,
+            'is_correct': is_correct,
+            'is_timeout': is_timeout,
+            'next_location': next_location,
+            'room': room, # '다시 풀기' 버튼에서 사용할 room 정보
+        }
         return render(request, 'recreation/play_result.html', context)
+
     return redirect('recreation:play_game', qr_code_id=qr_code_id)
+
 
 def generate_room_qr(request, qr_code_id):
     play_game_url = request.build_absolute_uri(

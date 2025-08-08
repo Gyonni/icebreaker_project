@@ -13,12 +13,11 @@ import datetime
 class GameTeamAdmin(admin.ModelAdmin):
     list_display = ('team_name', 'unique_code', 'score')
     readonly_fields = ('unique_code',)
-    ordering = ['team_name']
+    ordering = ['-score', 'team_name']
 
-    # [핵심 수정 1] 기존 actions 설정을 삭제하고, 커스텀 템플릿을 지정합니다.
+    # 커스텀 버튼을 위해 템플릿을 지정합니다.
     change_list_template = "admin/recreation/gameteam/change_list.html"
 
-    # [핵심 수정 2] 커스텀 버튼이 클릭했을 때 호출할 URL과 함수를 정의합니다.
     def get_urls(self):
         urls = super().get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name

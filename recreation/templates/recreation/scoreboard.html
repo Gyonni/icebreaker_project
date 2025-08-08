@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 점수 현황판</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-8">
+        <h1 class="text-4xl font-bold text-center text-yellow-300 mb-8">실시간 팀별 점수 현황</h1>
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <canvas id="scoreChart"></canvas>
+        </div>
+    </div>
+    <script>
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        let scoreChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: [], datasets: [{ label: '점수', data: [], backgroundColor: 'rgba(251, 191, 36, 0.6)', borderColor: 'rgba(251, 191, 36, 1)', borderWidth: 1 }] },
+            options: {
+                indexAxis: 'y',
+                scales: { x: { beginAtZero: true, ticks: { color: 'white' } }, y: { ticks: { color: 'white', font: { size: 14 } } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        async function updateScores() {
+            try {
+                const response = await fetch("{% url 'recreation:get_scores_api' %}");
+                const data = await response.json();
+
+                scoreChart.data.labels = data.map(team => team.team_name);
+                scoreChart.data.datasets[0].data = data.map(team => team.score);
+                scoreChart.update();
+            } catch (error) {
+                console.error("점수 업데이트 중 오류 발생:", error);
+            }
+        }
+        // 5초마다 점수를 자동으로 업데이트합니다.
+        setInterval(updateScores, 5000);
+        // 페이지 로드 시 첫 점수를 불러옵니다.
+        updateScores();
+    </script>
+</body>
+</html>
