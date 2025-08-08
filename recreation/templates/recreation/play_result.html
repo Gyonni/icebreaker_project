@@ -14,15 +14,28 @@
 
     <p class="text-lg text-gray-700 bg-gray-100 p-4 rounded-lg">{{ result_message }}</p>
 
-    {% if is_correct or is_timeout %}
+    <!-- [핵심 수정] 7라운드 여부에 따라 다른 안내를 보여줍니다. -->
+    {% if is_final_round %}
+        <div class="mt-8 p-4 bg-yellow-100 border-2 border-yellow-300 rounded-lg">
+            <h2 class="text-xl font-bold text-yellow-800">MISSION COMPLETE!</h2>
+            <p class="mt-2 text-yellow-700 text-lg">
+                {{ completion_message|default:"모든 미션을 완료했습니다! 최종 점수를 확인하고 강당으로 모여주세요." }}
+            </p>
+            <p class="mt-4 text-2xl font-bold">우리 팀 최종 점수: {{ team.score }}점</p>
+        </div>
+    {% elif is_correct or is_timeout %}
         <div class="mt-8 p-4 bg-purple-100 border-2 border-purple-300 rounded-lg">
             <h2 class="text-xl font-bold text-purple-800">다음 안내</h2>
             <p class="mt-2 text-purple-700 text-lg">{{ next_location }}</p>
         </div>
     {% else %}
-        <a href="{% url 'recreation:play_game' room.qr_code_id %}" class="w-full block bg-yellow-400 text-yellow-900 font-bold py-3 rounded-lg hover:bg-yellow-300 transition-colors">
-            다시 풀어보기
-        </a>
+        <form action="{% url 'recreation:play_game' room.qr_code_id %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="unique_code" value="{{ team.unique_code }}">
+            <button type="submit" class="w-full block bg-yellow-400 text-yellow-900 font-bold py-3 rounded-lg hover:bg-yellow-300 transition-colors">
+                다시 풀어보기
+            </button>
+        </form>
     {% endif %}
 </div>
 {% endblock %}

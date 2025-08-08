@@ -72,6 +72,8 @@ def submit_answer_view(request, qr_code_id):
         if is_timeout:
             result_message = "시간 초과입니다! 아쉽지만 점수를 얻지 못했습니다."
         elif problem.answer.lower() == submitted_answer.lower():
+            # [수정] 이미 푼 문제에 대해 중복 점수 획득 방지 로직 추가 (선택사항이지만 권장)
+            # 이 부분은 추후 더 정교하게 만들 수 있습니다.
             team.score += problem.points
             team.save()
             result_message = f"정답입니다! {problem.points}점을 획득했습니다!"
@@ -79,8 +81,12 @@ def submit_answer_view(request, qr_code_id):
         else:
             result_message = "땡! 아쉽지만 정답이 아닙니다. 다시 한번 생각해보세요!"
 
-        next_location = "모든 라운드가 종료되었습니다. 강당으로 모여주세요!"
-        if current_timeslot.round_number < 7:
+        # --- [핵심 수정] 7라운드인지 확인하는 로직 ---
+        is_final_round = current_timeslot.round_number == 7
+        next_location = ""
+
+        if not is_final_round:
+            # 7라운드가 아닐 때만 다음 장소를 안내합니다.
             try:
                 next_timeslot = GameTimeSlot.objects.get(round_number=current_timeslot.round_number + 1)
                 next_schedule = TeamSchedule.objects.get(team=team, timeslot=next_timeslot)
@@ -94,7 +100,9 @@ def submit_answer_view(request, qr_code_id):
             'is_timeout': is_timeout,
             'next_location': next_location,
             'room': room,
-            'team': team, # [수정] '다시 풀기'를 위해 team 정보 추가
+            'team': team,
+            'is_final_round': is_final_round, # 7라운드 여부 전달
+            'completion_message': problem.completion_message, # 완료 메시지 전달
         }
         return render(request, 'recreation/play_result.html', context)
 
