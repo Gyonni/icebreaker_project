@@ -42,6 +42,13 @@ class GameProblem(models.Model):
     answer = models.CharField("정답", max_length=255)
     points = models.PositiveIntegerField("획득 점수", default=10)
 
+    # --- [새로운 기능] 7라운드 완료 시 보여줄 메시지 ---
+    completion_message = models.TextField(
+        "미션 완료 메시지", 
+        blank=True, 
+        help_text="7라운드 문제에만 적용됩니다. 예: 모든 미션을 완료했습니다! 최종 점수를 확인하고 강당으로 모여주세요."
+    )
+
     def __str__(self):
         return f"{self.round_number}라운드 문제"
 
