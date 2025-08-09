@@ -1,7 +1,6 @@
 from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField
 import uuid
-import random
 
 class GameTeam(models.Model):
     team_name = models.CharField("팀 이름", max_length=100, unique=True)
@@ -10,25 +9,17 @@ class GameTeam(models.Model):
     end_time = models.DateTimeField("종료 시간", null=True, blank=True)
     current_round = models.PositiveIntegerField("현재 라운드", default=1)
 
-    def __str__(self):
-        return f"{self.team_name} ({self.unique_code})"
-
-    class Meta:
-        verbose_name = "게임 팀"
-        verbose_name_plural = "게임 팀 목록"
+    def __str__(self): return f"{self.team_name} ({self.unique_code})"
+    class Meta: verbose_name, verbose_name_plural = "게임 팀", "게임 팀 목록"
 
 class GameRoom(models.Model):
     name = models.CharField("장소 이름", max_length=100)
     qr_code_id = models.UUIDField("QR코드 고유ID", default=uuid.uuid4, editable=False, unique=True)
     location_hint = models.TextField("장소 힌트", blank=True)
-    location_answer = models.CharField("장소 정답 (팀이 다음 장소를 찾을 때 입력)", max_length=100, blank=True)
+    location_answer = models.CharField("장소 정답", max_length=100, blank=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "게임 장소"
-        verbose_name_plural = "게임 장소 목록"
+    def __str__(self): return self.name
+    class Meta: verbose_name, verbose_name_plural = "게임 장소", "게임 장소 목록"
 
 class GameProblem(models.Model):
     round_number = models.PositiveIntegerField("라운드 번호", unique=True)
@@ -36,24 +27,13 @@ class GameProblem(models.Model):
     answer = models.CharField("정답", max_length=255)
     completion_message = RichTextUploadingField("정답 시 메시지")
 
-    def __str__(self):
-        return f"{self.round_number}라운드 문제"
-
-    class Meta:
-        verbose_name = "게임 문제"
-        verbose_name_plural = "게임 문제 목록"
-        ordering = ['round_number']
+    def __str__(self): return f"{self.round_number}라운드 문제"
+    class Meta: verbose_name, verbose_name_plural = "게임 문제", "게임 문제 목록"; ordering = ['round_number']
 
 class TeamSchedule(models.Model):
     team = models.ForeignKey(GameTeam, on_delete=models.CASCADE, verbose_name="팀")
-    # [수정] makemigrations 오류를 해결하기 위해 default=1을 추가합니다.
-    round_number = models.PositiveIntegerField("라운드 번호", default=1)
+    round_number = models.PositiveIntegerField("라운드 번호")
     room = models.ForeignKey(GameRoom, on_delete=models.CASCADE, verbose_name="장소")
 
-    def __str__(self):
-        return f"[{self.round_number}R] {self.team.team_name} -> {self.room.name}"
-
-    class Meta:
-        verbose_name = "팀별 스케줄"
-        verbose_name_plural = "팀별 스케줄 표"
-        unique_together = ('team', 'round_number')
+    def __str__(self): return f"[{self.round_number}R] {self.team.team_name} -> {self.room.name}"
+    class Meta: verbose_name, verbose_name_plural = "팀별 스케줄", "팀별 스케줄 표"; unique_together = ('team', 'round_number')

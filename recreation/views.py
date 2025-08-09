@@ -3,106 +3,61 @@ from django.utils import timezone
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
-from .models import GameRoom, GameTeam, TeamSchedule, GameTimeSlot, GameProblem
+from .models import GameRoom, GameTeam, TeamSchedule, GameProblem
 import qrcode
 from io import BytesIO
 
 def play_game_view(request, qr_code_id):
     room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
-
     if request.method == 'POST':
         team_code = request.POST.get('unique_code')
-        if not team_code:
-            messages.error(request, "팀 고유번호를 입력해주세요.")
-            return redirect('recreation:play_game', qr_code_id=qr_code_id)
-
         try:
             team = GameTeam.objects.get(unique_code=team_code)
-        except GameTeam.DoesNotExist:
-            messages.error(request, f"'{team_code}'는 유효하지 않은 고유번호입니다.")
-            return redirect('recreation:play_game', qr_code_id=qr_code_id)
+            if team.start_time is None:
+                team.start_time = timezone.now()
+                team.save()
 
-        now = timezone.now()
-        current_timeslot = GameTimeSlot.objects.filter(start_time__lte=now, end_time__gte=now).first()
-
-        if not current_timeslot:
-            messages.error(request, "현재 진행 중인 게임 라운드가 없습니다.")
-            return redirect('recreation:play_game', qr_code_id=qr_code_id)
-
-        schedule = TeamSchedule.objects.filter(team=team, timeslot=current_timeslot).first()
-
-        if not schedule or schedule.room != room:
-            correct_room_schedule = TeamSchedule.objects.filter(team=team, timeslot=current_timeslot).first()
-            if correct_room_schedule:
-                messages.error(request, f"지금은 이 방이 아닙니다! '{correct_room_schedule.room.name}'(으)로 이동해주세요.")
+            schedule = TeamSchedule.objects.get(team=team, round_number=team.current_round)
+            if schedule.room == room:
+                problem = GameProblem.objects.get(round_number=team.current_round)
+                return render(request, 'recreation/play_problem.html', {'team': team, 'problem': problem})
             else:
-                messages.error(request, "스케줄 정보를 찾을 수 없습니다. 운영진에게 문의해주세요.")
-            return redirect('recreation:play_game', qr_code_id=qr_code_id)
+                messages.error(request, f"잘못된 장소입니다! '{schedule.room.name}'(으)로 이동해주세요.")
+        except GameTeam.DoesNotExist:
+            messages.error(request, "유효하지 않은 팀 고유번호입니다.")
+        except (TeamSchedule.DoesNotExist, GameProblem.DoesNotExist):
+            messages.error(request, "게임 설정에 문제가 있습니다. 운영진에게 문의해주세요.")
+        return redirect('recreation:play_game', qr_code_id=qr_code_id)
+    return render(request, 'recreation/play_auth.html', {'room': room})
 
-        problem = get_object_or_404(GameProblem, round_number=current_timeslot.round_number)
-        context = {
-            'team': team,
-            'room': room,
-            'problem': problem,
-            'timeslot': current_timeslot,
-        }
-        return render(request, 'recreation/play_problem.html', context)
-
-    context = {'room': room}
-    return render(request, 'recreation/play_auth.html', context)
-
-
-def submit_answer_view(request, qr_code_id):
+def submit_answer_view(request):
     if request.method == 'POST':
         team_id = request.POST.get('team_id')
         problem_id = request.POST.get('problem_id')
         submitted_answer = request.POST.get('answer', '').strip()
-
         team = get_object_or_404(GameTeam, id=team_id)
         problem = get_object_or_404(GameProblem, id=problem_id)
-        room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
 
-        now = timezone.now()
-        current_timeslot = get_object_or_404(GameTimeSlot, round_number=problem.round_number)
+        is_correct = problem.answer.lower() == submitted_answer.lower()
+        next_location_hint = ""
+        is_final_round = team.current_round == 8
 
-        result_message = ""
-        is_correct = False
-        is_timeout = now > current_timeslot.end_time
-
-        if is_timeout:
-            result_message = "시간 초과입니다! 아쉽지만 점수를 얻지 못했습니다."
-        elif problem.answer.lower() == submitted_answer.lower():
-            team.score += problem.points
+        if is_correct:
+            if not is_final_round:
+                team.current_round += 1
+                next_schedule = TeamSchedule.objects.get(team=team, round_number=team.current_round)
+                next_location_hint = next_schedule.room.location_hint
+            else:
+                if team.end_time is None:
+                    team.end_time = timezone.now()
             team.save()
-            result_message = f"정답입니다! {problem.points}점을 획득했습니다!"
-            is_correct = True
-        else:
-            result_message = "땡! 아쉽지만 정답이 아닙니다. 다시 한번 생각해보세요!"
-
-        is_final_round = current_timeslot.round_number == 7
-        next_location = ""
-
-        if not is_final_round:
-            try:
-                next_timeslot = GameTimeSlot.objects.get(round_number=current_timeslot.round_number + 1)
-                next_schedule = TeamSchedule.objects.get(team=team, timeslot=next_timeslot)
-                next_location = f"다음 장소는 '{next_schedule.room.name}' 입니다. 서둘러 이동해주세요!"
-            except (GameTimeSlot.DoesNotExist, TeamSchedule.DoesNotExist):
-                next_location = "다음 장소를 찾을 수 없습니다. 운영진에게 문의해주세요."
 
         context = {
-            'result_message': result_message,
-            'is_correct': is_correct,
-            'is_timeout': is_timeout,
-            'next_location': next_location,
-            'room': room,
-            'team': team,
-            'is_final_round': is_final_round,
-            'completion_message': problem.completion_message,
+            'is_correct': is_correct, 'team': team, 'problem': problem,
+            'is_final_round': is_final_round, 'next_location_hint': next_location_hint
         }
         return render(request, 'recreation/play_result.html', context)
-
-    return redirect('recreation:play_game', qr_code_id=qr_code_id)
+    return redirect('core:index')
 
 def generate_room_qr(request, qr_code_id):
     play_game_url = request.build_absolute_uri(
