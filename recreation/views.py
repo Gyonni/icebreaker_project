@@ -1,4 +1,3 @@
-# recreation/views.py
 from django.http import HttpResponse
 
 # urls.py에 연결된 임시 함수. GameTimeSlot을 참조하지 않습니다.
