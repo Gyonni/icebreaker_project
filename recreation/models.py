@@ -15,7 +15,7 @@ class GameTeam(models.Model):
 class GameRoom(models.Model):
     name = models.CharField("장소 이름", max_length=100)
     qr_code_id = models.UUIDField("QR코드 고유ID", default=uuid.uuid4, editable=False, unique=True)
-    location_hint = models.TextField("장소 힌트", blank=True, help_text="이전 라운드를 클리어한 팀에게 보여줄 다음 장소에 대한 힌트입니다.")
+    location_hint = RichTextUploadingField("장소 힌트", blank=True, help_text="이전 라운드를 클리어한 팀에게 보여줄 다음 장소에 대한 힌트입니다.")
     location_answer = models.CharField("장소 정답", max_length=100, blank=True, help_text="힌트를 보고 팀이 유추해야 할 이 장소의 이름입니다.")
 
     def __str__(self): return self.name

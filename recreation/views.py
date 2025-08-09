@@ -7,15 +7,6 @@ from .models import GameRoom, GameTeam, TeamSchedule, GameProblem
 import qrcode
 from io import BytesIO
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import timezone
-from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
-from django.urls import reverse
-from .models import GameRoom, GameTeam, TeamSchedule, GameProblem
-import qrcode
-from io import BytesIO
-
 def play_game_view(request, qr_code_id):
     room = get_object_or_404(GameRoom, qr_code_id=qr_code_id)
     if request.method == 'POST':
@@ -75,9 +66,7 @@ def get_problem_view(request):
     return render(request, 'recreation/play_problem.html', {'team': team, 'problem': problem})
 
 def generate_room_qr(request, qr_code_id):
-    play_game_url = request.build_absolute_uri(
-        reverse('recreation:play_game', args=[qr_code_id])
-    )
+    play_game_url = request.build_absolute_uri(reverse('recreation:play_game', args=[qr_code_id]))
     img = qrcode.make(play_game_url)
     buffer = BytesIO()
     img.save(buffer, format='PNG')
@@ -87,5 +76,18 @@ def scoreboard_view(request):
     return render(request, 'recreation/scoreboard.html')
 
 def get_scores_api(request):
-    teams = GameTeam.objects.order_by('-score', 'team_name').values('team_name', 'score')
-    return JsonResponse(list(teams), safe=False)
+    teams = GameTeam.objects.all()
+    data = []
+    for team in teams:
+        duration_str = "진행 중"
+        if team.end_time and team.start_time:
+            duration = team.end_time - team.start_time
+            total_seconds = int(duration.total_seconds())
+            minutes = total_seconds // 60
+            seconds = total_seconds % 60
+            duration_str = f"{minutes}분 {seconds}초"
+        data.append({'team_name': team.team_name, 'score': duration_str, 'current_round': team.current_round})
+
+    # 클리어 시간으로 정렬 (진행 중인 팀은 맨 뒤로)
+    data.sort(key=lambda x: (x['score'] == "진행 중", x['score']))
+    return JsonResponse(data, safe=False)
