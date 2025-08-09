@@ -25,6 +25,7 @@ urlpatterns = [
     path('profiles/', include('profiles.urls')),
     path('prayers/', include('prayerboard.urls')),
     path('recreation/', include('recreation.urls')),
+    path('ckeditor/', include('ckeditor_uploader.urls')),
     path('', include('core.urls')),
 ]
 
