@@ -15,17 +15,17 @@ class GameTeam(models.Model):
 class GameRoom(models.Model):
     name = models.CharField("장소 이름", max_length=100)
     qr_code_id = models.UUIDField("QR코드 고유ID", default=uuid.uuid4, editable=False, unique=True)
-    location_hint = models.TextField("장소 힌트", blank=True)
-    location_answer = models.CharField("장소 정답", max_length=100, blank=True)
+    location_hint = models.TextField("장소 힌트", blank=True, help_text="이전 라운드를 클리어한 팀에게 보여줄 다음 장소에 대한 힌트입니다.")
+    location_answer = models.CharField("장소 정답", max_length=100, blank=True, help_text="힌트를 보고 팀이 유추해야 할 이 장소의 이름입니다.")
 
     def __str__(self): return self.name
     class Meta: verbose_name, verbose_name_plural = "게임 장소", "게임 장소 목록"
 
 class GameProblem(models.Model):
     round_number = models.PositiveIntegerField("라운드 번호", unique=True)
-    question = RichTextUploadingField("문제")
-    answer = models.CharField("정답", max_length=255)
-    completion_message = RichTextUploadingField("정답 시 메시지")
+    question = RichTextUploadingField("문제 내용 (이미지, 글자 꾸밈 가능)")
+    answer = models.CharField("정답", max_length=255, help_text="여러 정답이 가능할 경우, | (파이프) 기호로 구분해주세요. (예: 예수|그리스도)")
+    completion_message = RichTextUploadingField("정답 시 메시지 (이미지, 글자 꾸밈 가능)")
 
     def __str__(self): return f"{self.round_number}라운드 문제"
     class Meta: verbose_name, verbose_name_plural = "게임 문제", "게임 문제 목록"; ordering = ['round_number']
